@@ -1,0 +1,6 @@
+﻿﻿Note: you'll need to copy this file to the output directory of your compiler (and rename it to "Settings.txt").
+(If you aren't able to get an Appveyor API key, just leave the field blank.)
+
+SE Email:mybelovedtrash@gmail.com
+SE Password:correct horse battery staple
+RoomURL:http://chat.stackoverflow.com/rooms/97558/discussion-about-what-to-do-with-the-cv-pls-requests
