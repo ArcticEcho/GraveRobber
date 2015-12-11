@@ -20,6 +20,7 @@
 
 
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net;
@@ -47,13 +48,15 @@ namespace GraveRobber
 
 
 
-        public Dictionary<Message, string> GetRecentMessage(Room room)
+        public Dictionary<Message, string> GetRecentMessage(Room room, int msgCount = 50)
         {
+            msgCount = Math.Max(10, Math.Min(500, msgCount));
+
             var jsonStr = Encoding.UTF8.GetString(new WebClient().UploadValues("http://chat.stackoverflow.com/chats/90230/events", new NameValueCollection
             {
                 { "since", "0" },
                 { "mode", "Messages" },
-                { "msgCount", "50" },
+                { "msgCount", msgCount.ToString() },
                 { "fkey", fkey }
             }));
 

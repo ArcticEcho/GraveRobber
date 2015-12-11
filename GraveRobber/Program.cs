@@ -27,6 +27,7 @@ using ChatExchangeDotNet;
 
 namespace GraveRobber
 {
+    using System.Linq;
     using ServiceStack.Text;
     using Status = QuestionStatus.Status;
 
@@ -93,29 +94,35 @@ namespace GraveRobber
         {
             var cmd = msg.Content.Trim().ToUpperInvariant();
 
-            switch (cmd)
+            if (cmd == "DIE")
             {
-                case "DIE":
+                chatRoom.PostMessageFast("Bye.");
+                shutdownMre.Set();
+            }
+            else if (cmd.StartsWith("FETCH DATA"))
+            {
+                var msgCount = 50;
+
+                if (cmd.Any(Char.IsDigit))
                 {
-                    chatRoom.PostMessageFast("Bye.");
-                    shutdownMre.Set();
-                    break;
+                    if (!int.TryParse(new string(cmd.Where(Char.IsDigit).ToArray()), out msgCount))
+                    {
+                        // Well, do nothing since we've already initialised
+                        // the field with a default value (of 50).
+                    }
                 }
-                case "FETCH DATA":
-                {
-                    chatRoom.PostMessageFast("Fetching data, one moment...");
-                    FetchData();
-                    break;
-                }
+
+                chatRoom.PostMessageFast("Fetching data, one moment...");
+                FetchData(msgCount);
             }
         }
 
-        private static void FetchData()
+        private static void FetchData(int msgCount)
         {
             try
             {
                 var fetcher = new MessageFetcher();
-                var messages = fetcher.GetRecentMessage(chatRoom);
+                var messages = fetcher.GetRecentMessage(chatRoom, msgCount);
                 var statuses = new Dictionary<string, KeyValuePair<Status, int>?>();
 
                 foreach (var msg in messages)
@@ -140,7 +147,8 @@ namespace GraveRobber
 
                 if (!String.IsNullOrWhiteSpace(chatMsg.ToString()))
                 {
-                    chatRoom.PostMessageFast(chatMsg);
+                    var msgText = $"{statuses.Count} messages checked\n{chatMsg}";
+                    chatRoom.PostMessageFast(msgText);
                 }
             }
             catch (Exception ex)
