@@ -68,7 +68,7 @@ namespace GraveRobber
 
                 if (!int.TryParse(idStr, out id)) continue;
 
-                Thread.Sleep(1500);
+                Thread.Sleep(1000);
 
                 var message = room[id];
 

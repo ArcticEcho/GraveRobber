@@ -50,7 +50,7 @@ namespace GraveRobber
         // Check how many times a post is edited AFTER being closed.
 
 
-        public static Status? GetQuestionStatus(string url)
+        public static KeyValuePair<Status, int>? GetQuestionStatus(string url)
         {
             if (String.IsNullOrWhiteSpace(url) || !postIDRegex.IsMatch(url)) return null;
 
@@ -59,13 +59,9 @@ namespace GraveRobber
             if (htmls == null) return null;
 
             var st = IsClosedOrReopened(htmls);
+            var edits = EditsSinceClosure(htmls);
 
-            if (IsEdited(htmls))
-            {
-                st |= Status.Edited;
-            }
-
-            return st;
+            return new KeyValuePair<Status, int>(st, edits);
         }
 
 
@@ -113,10 +109,31 @@ namespace GraveRobber
             return Status.Open;
         }
 
-        private static bool IsEdited(List<string> revs)
+        private static int EditsSinceClosure(List<string> revs)
         {
-            return revs.Any(x => x.StartsWith("<tr class=\"revision\"") ||
-                                 x.StartsWith("<tr class=\"owner-revision\""));
+            var editCount = 0;
+
+            for (var i = 0; i < revs.Count; i++)
+            {
+                if (revs[i].StartsWith("<tr class=\"revision\"") ||
+                    revs[i].StartsWith("<tr class=\"owner-revision\""))
+                {
+                    editCount++;
+                    continue;
+                }
+
+                if (closedRegex.IsMatch(revs[i]))
+                {
+                    return editCount;
+                }
+
+                if (reopenedRegex.IsMatch(revs[i]))
+                {
+                    return 0;
+                }
+            }
+
+            return 0;
         }
     }
 }

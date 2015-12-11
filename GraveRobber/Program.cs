@@ -116,15 +116,32 @@ namespace GraveRobber
             {
                 var fetcher = new MessageFetcher();
                 var messages = fetcher.GetRecentMessage(chatRoom);
-                var statuses = new Dictionary<string, Status?>();
+                var statuses = new Dictionary<string, KeyValuePair<Status, int>?>();
 
                 foreach (var msg in messages)
                 {
-                    Thread.Sleep(1500);
-                    statuses[msg.Value] = QuestionStatus.GetQuestionStatus(msg.Value);
+                    Thread.Sleep(1000);
+
+                    var qStatus = QuestionStatus.GetQuestionStatus(msg.Value);
+
+                    statuses[msg.Value] = qStatus;
                 }
 
                 var data = statuses.Dump();
+
+                var chatMsg = new MessageBuilder(MultiLineMessageType.None, false);
+
+                foreach (var post in statuses)
+                {
+                    if ((post.Value?.Value ?? 0) == 0) continue;
+
+                    chatMsg.AppendText($"{post.Value.Value.Key}, edited {post.Value.Value.Value} time(s): {post.Key}\n");
+                }
+
+                if (!String.IsNullOrWhiteSpace(chatMsg.ToString()))
+                {
+                    chatRoom.PostMessageFast(chatMsg);
+                }
             }
             catch (Exception ex)
             {
