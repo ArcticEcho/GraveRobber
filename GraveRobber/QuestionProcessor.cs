@@ -22,6 +22,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static GraveRobber.QuestionChecker;
 
 namespace GraveRobber
@@ -30,18 +31,20 @@ namespace GraveRobber
     {
         private Logger<string> queuedPosts;
 
-        public Logger<QuestionStatus> ActiveClosedPosts { get; }
+        public int WatchedPosts => queuedPosts?.Count ?? 0;
+
+        public Logger<QuestionStatus> PostsPendingReview { get; }
 
 
 
         public QuestionProcessor()
         {
             // Queued posts to check back on later.
-            queuedPosts = new Logger<string>("queued posts log.txt");
-            queuedPosts.CollectionFlushedEvent = new Action(CheckPosts);
+            queuedPosts = new Logger<string>("watched-posts.txt");
+            queuedPosts.CollectionCheckedEvent = new Action(CheckPosts);
 
             // Save any active posts (rather than caching them).
-            ActiveClosedPosts = new Logger<QuestionStatus>("active closed posts.txt");
+            PostsPendingReview = new Logger<QuestionStatus>("posts-pending-review.txt");
         }
 
 
@@ -51,6 +54,12 @@ namespace GraveRobber
             if (string.IsNullOrWhiteSpace(url))
             {
                 throw new ArgumentException("'url' must not be null, empty, or entirely whitespace.", "url");
+            }
+            // Check for dupes.
+            if (queuedPosts.Any(x => (string)x.Data == url) ||
+                PostsPendingReview.Any(x => ((QuestionStatus)x.Data).Url == url))
+            {
+                return;
             }
 
             queuedPosts.EnqueueItem(url);
@@ -70,7 +79,7 @@ namespace GraveRobber
 
                 if (status != null && status.Status.HasFlag(Status.Closed) && status.EditsSinceClosure > 0)
                 {
-                    ActiveClosedPosts.EnqueueItem(status);
+                    PostsPendingReview.EnqueueItem(status);
                     foundPosts.Add(status.Url);
                 }
             }

@@ -49,7 +49,7 @@ namespace GraveRobber
 
         public Action<T> ItemRemovedEvent { get; set; }
 
-        public Action CollectionFlushedEvent { get; set; }
+        internal Action CollectionCheckedEvent { get; set; }
 
 
 
@@ -234,11 +234,11 @@ namespace GraveRobber
                         File.Delete(logPath);
                         File.Move(temp, logPath);
                     }
+                }
 
-                    if (CollectionFlushedEvent != null)
-                    {
-                        Task.Run(CollectionFlushedEvent);
-                    }
+                if (CollectionCheckedEvent != null)
+                {
+                    Task.Run(CollectionCheckedEvent);
                 }
 
                 itemRemoverMre.WaitOne(clearRate);

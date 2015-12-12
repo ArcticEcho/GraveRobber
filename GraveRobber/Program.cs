@@ -99,7 +99,7 @@ namespace GraveRobber
             mainRoom.InitialisePrimaryContentOnly = true;
             mainRoom.EventManager.ConnectListener(EventType.UserMentioned, new Action<Message>(HandleCommand));
 
-            watchingRoom = chatClient.JoinRoom("http://chat.stackoverflow.com/rooms/90230/cv-request-graveyard");
+            watchingRoom = chatClient.JoinRoom("http://chat.stackoverflow.com/rooms/90230/cv-request-graveyard");//("http://chat.stackoverflow.com/rooms/68414/socvr-testing-facility");//
             watchingRoom.InitialisePrimaryContentOnly = true;
             watchingRoom.EventManager.ConnectListener(EventType.MessageMovedIn, new Action<Message>(m =>
             {
@@ -120,6 +120,12 @@ namespace GraveRobber
             {
                 mainRoom.PostMessageFast("Bye.");
                 shutdownMre.Set();
+            }
+            else if (cmd == "STATS")
+            {
+                var pendingQs = qProcessor.PostsPendingReview.Count;
+                var watchingQs = qProcessor.WatchedPosts;
+                mainRoom.PostMessageFast($"Posts being watched: `{watchingQs}`. Posts pending review: `{pendingQs}`.");
             }
             else if (cmd.StartsWith("CHECK GRAVE"))
             {
@@ -146,7 +152,7 @@ namespace GraveRobber
                 var chatMsg = new MessageBuilder();
                 var posts = new HashSet<QuestionStatus>();
 
-                foreach (var entry in qProcessor.ActiveClosedPosts)
+                foreach (var entry in qProcessor.PostsPendingReview)
                 {
                     if (posts.Count > postCount) break;
 
@@ -162,7 +168,7 @@ namespace GraveRobber
 
                     foreach (var post in posts)
                     {
-                        qProcessor.ActiveClosedPosts.RemoveItem(post);
+                        qProcessor.PostsPendingReview.RemoveItem(post);
                     }
                 }
                 else
