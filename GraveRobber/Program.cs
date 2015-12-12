@@ -22,20 +22,22 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using ChatExchangeDotNet;
+using ServiceStack.Text;
+using static GraveRobber.QuestionChecker;
 
 namespace GraveRobber
 {
-    using System.Linq;
-    using ServiceStack.Text;
-    using Status = QuestionStatus.Status;
-
     class Program
     {
         private static readonly ManualResetEvent shutdownMre = new ManualResetEvent(false);
+        private static readonly MessageFetcher messageFetcher = new MessageFetcher();
+        private static QuestionProcessor qProcessor;
         private static Client chatClient;
-        private static Room chatRoom;
+        private static Room mainRoom;
+        private static Room watchingRoom;
 
 
 
@@ -50,6 +52,8 @@ namespace GraveRobber
 
             Console.Write("Authenticating...");
             InitialiseFromConfig();
+            Console.Write("done.\nStarting question processor...");
+            StartQuestionProcessor();
             Console.Write("done.\nJoining chat room(s)...");
             JoinRooms();
 
@@ -63,7 +67,7 @@ namespace GraveRobber
 
             Console.Write("Stopping...");
 
-            chatRoom?.Leave();
+            mainRoom?.Leave();
             shutdownMre.Dispose();
             chatClient?.Dispose();
 
@@ -82,12 +86,30 @@ namespace GraveRobber
             chatClient = new Client(email, pwd);
         }
 
+        private static void StartQuestionProcessor()
+        {
+            qProcessor = new QuestionProcessor();
+        }
+
         private static void JoinRooms()
         {
             var cr = new ConfigReader();
 
-            chatRoom = chatClient.JoinRoom(cr.GetSetting("room"));
-            chatRoom.EventManager.ConnectListener(EventType.UserMentioned, new Action<Message>(HandleCommand));
+            mainRoom = chatClient.JoinRoom(cr.GetSetting("room"));
+            mainRoom.InitialisePrimaryContentOnly = true;
+            mainRoom.EventManager.ConnectListener(EventType.UserMentioned, new Action<Message>(HandleCommand));
+
+            watchingRoom = chatClient.JoinRoom("http://chat.stackoverflow.com/rooms/90230/cv-request-graveyard");
+            watchingRoom.InitialisePrimaryContentOnly = true;
+            watchingRoom.EventManager.ConnectListener(EventType.MessageMovedIn, new Action<Message>(m =>
+            {
+                var url = messageFetcher.GetPostUrl(m);
+
+                if (!String.IsNullOrWhiteSpace(url))
+                {
+                    qProcessor.WatchPost(url);
+                }
+            }));
         }
 
         private static void HandleCommand(Message msg)
@@ -96,59 +118,56 @@ namespace GraveRobber
 
             if (cmd == "DIE")
             {
-                chatRoom.PostMessageFast("Bye.");
+                mainRoom.PostMessageFast("Bye.");
                 shutdownMre.Set();
             }
-            else if (cmd.StartsWith("FETCH DATA"))
+            else if (cmd.StartsWith("CHECK GRAVE"))
             {
-                var msgCount = 50;
+                var postCount = 10;
 
                 if (cmd.Any(Char.IsDigit))
                 {
-                    if (!int.TryParse(new string(cmd.Where(Char.IsDigit).ToArray()), out msgCount))
+                    if (!int.TryParse(new string(cmd.Where(Char.IsDigit).ToArray()), out postCount))
                     {
                         // Well, do nothing since we've already initialised
-                        // the field with a default value (of 50).
+                        // the field with a default value (of 10).
                     }
                 }
 
-                chatRoom.PostMessageFast("Fetching data, one moment...");
-                FetchData(msgCount);
+                mainRoom.PostMessageFast("Digging up graves, one moment...");
+                CheckGrave(postCount);
             }
         }
 
-        private static void FetchData(int msgCount)
+        private static void CheckGrave(int postCount)
         {
             try
             {
-                var fetcher = new MessageFetcher();
-                var messages = fetcher.GetRecentMessage(chatRoom, msgCount);
-                var statuses = new Dictionary<string, KeyValuePair<Status, int>?>();
+                var chatMsg = new MessageBuilder();
+                var posts = new HashSet<QuestionStatus>();
 
-                foreach (var msg in messages)
+                foreach (var entry in qProcessor.ActiveClosedPosts)
                 {
-                    Thread.Sleep(1000);
+                    if (posts.Count > postCount) break;
 
-                    var qStatus = QuestionStatus.GetQuestionStatus(msg.Value);
+                    var post = (QuestionStatus)entry.Data;
 
-                    statuses[msg.Value] = qStatus;
-                }
-
-                var data = statuses.Dump();
-
-                var chatMsg = new MessageBuilder(MultiLineMessageType.None, false);
-
-                foreach (var post in statuses)
-                {
-                    if ((post.Value?.Value ?? 0) == 0) continue;
-
-                    chatMsg.AppendText($"{post.Value.Value.Key}, edited {post.Value.Value.Value} time(s): {post.Key}\n");
+                    posts.Add(post);
+                    chatMsg.AppendText($"{post.Status}, edited {post.EditsSinceClosure} time(s): {post.Url}\n");
                 }
 
                 if (!String.IsNullOrWhiteSpace(chatMsg.ToString()))
                 {
-                    var msgText = $"{statuses.Count} messages checked\n{chatMsg}";
-                    chatRoom.PostMessageFast(msgText);
+                    mainRoom.PostMessageFast(chatMsg);
+
+                    foreach (var post in posts)
+                    {
+                        qProcessor.ActiveClosedPosts.RemoveItem(post);
+                    }
+                }
+                else
+                {
+                    mainRoom.PostMessageFast("No questions found.");
                 }
             }
             catch (Exception ex)

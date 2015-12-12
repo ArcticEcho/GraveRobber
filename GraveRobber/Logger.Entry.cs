@@ -20,14 +20,17 @@
 
 
 
-using static GraveRobber.QuestionChecker;
+using System;
 
 namespace GraveRobber
 {
-    public class QuestionStatus
+    public partial class Logger<T>
     {
-        public string Url { get; set; }
-        public Status Status { get; set; }
-        public int EditsSinceClosure { get; set; }
+        public class Entry
+        {
+            public object Data { get; set; }
+
+            public DateTime Timestamp { get; set; }
+        }
     }
 }

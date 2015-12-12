@@ -63,10 +63,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConfigReader.cs" />
+    <Compile Include="Logger.cs" />
+    <Compile Include="Logger.Entry.cs" />
     <Compile Include="MessageFetcher.cs" />
-    <Compile Include="QuestionStatus.cs" />
+    <Compile Include="QuestionProcessor.cs" />
+    <Compile Include="QuestionChecker.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="QuestionStatus.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

@@ -74,17 +74,23 @@ namespace GraveRobber
                 Thread.Sleep(1000);
 
                 var message = room[id];
-
-                if (cvplsMsg.IsMatch(message.Content))
-                {
-                    var postUrl = cvplsPostUrl.Match(message.Content).Groups[1].Value.Trim();
-                    postUrl = postUrl.EndsWith(")") ? postUrl.Substring(0, postUrl.Length - 1) : postUrl;
-
-                    msgs[message] = postUrl;
-                }
+                msgs[message] = GetPostUrl(message);
             }
 
             return msgs;
+        }
+
+        public string GetPostUrl(Message message)
+        {
+            if (cvplsMsg.IsMatch(message.Content))
+            {
+                var postUrl = cvplsPostUrl.Match(message.Content).Groups[1].Value.Trim();
+                postUrl = postUrl.EndsWith(")") ? postUrl.Substring(0, postUrl.Length - 1) : postUrl;
+
+                return postUrl;
+            }
+
+            return null;
         }
     }
 }
