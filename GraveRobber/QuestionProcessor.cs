@@ -23,6 +23,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using static GraveRobber.QuestionChecker;
 
 namespace GraveRobber
@@ -74,6 +75,8 @@ namespace GraveRobber
             foreach (var entry in queuedPosts)
             {
                 if ((DateTime.UtcNow - entry.Timestamp).TotalDays < 1) continue;
+
+                Thread.Sleep(1000);
 
                 var status = GetQuestionStatus((string)entry.Data);
 
