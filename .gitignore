@@ -195,7 +195,10 @@ FakesAssemblies/
 # Visual Studio 6 workspace options file
 *.opt
 
-# Ignoring a user-created docker-compose file.
+# Ignoring a user-created docker-compose file and the setting.txt file
 # Because these are specific to the computer you are deploying the
 # program on, we don't want this file commited to the repository.
+# Also, they contain password. I shouldn't need to tell you why commiting 
+# those files is a bad idea.
 /docker-compose.yml
+/source/GraveRobber/Settings.txt
