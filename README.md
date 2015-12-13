@@ -2,5 +2,4 @@
 
 A .NET PoC program for fetching data from the SOCVR graveyards.
 
-
-For instructions on running this program in docker, referr to the comments in the docker-compose.yml.example file.
+For instructions on running this program in docker, refer to the comments in the [docker-compose.yml.example](/docker-compose.yml.example) file.
