@@ -69,12 +69,6 @@ namespace GraveRobber
             {
                 throw new ArgumentException("'url' must not be null, empty, or entirely whitespace.", "url");
             }
-            // Check for dupes.
-            if (watchedPosts.Any(x => x.Url == url) ||
-                PostsPendingReview.Any(x => x.Url == url))
-            {
-                return;
-            }
 
             queuedUrls.Enqueue(url);
         }
@@ -101,11 +95,18 @@ namespace GraveRobber
             {
                 Thread.Sleep(2000);
 
-                if (queuedUrls.Count == 0 || dispose) continue;
+                // Check for dupes (and other conditions).
+                if (dispose || queuedUrls.Count == 0 ||
+                    watchedPosts.Any(x => x.Url == url) ||
+                    PostsPendingReview.Any(x => x.Url == url))
+                {
+                    continue;
+                }
 
                 queuedUrls.TryDequeue(out url);
                 var date = GetQuestionStatus(url)?.CloseDate;
 
+                // Ignore the post as it is either open or deleted.
                 if (date == null) continue;
 
                 watchedPosts.EnqueueItem(new QueuedQuestion
@@ -118,7 +119,7 @@ namespace GraveRobber
 
         private void CheckPosts()
         {
-            var foundPosts = new HashSet<QueuedQuestion>();
+            var postsToRemove = new HashSet<QueuedQuestion>();
 
             foreach (var post in watchedPosts)
             {
@@ -130,15 +131,20 @@ namespace GraveRobber
 
                 var status = GetQuestionStatus(post.Url);
 
-                if (status != null && status.CloseDate != null &&
+                if (status?.CloseDate != null &&
                     status.EditsSinceClosure > 0)
                 {
                     PostsPendingReview.EnqueueItem(status);
-                    foundPosts.Add(post);
+                    postsToRemove.Add(post);
+                }
+                else if (status?.CloseDate == null)
+                {
+                    // Remove the post as it has been either reopened or deleted.
+                    postsToRemove.Add(post);
                 }
             }
 
-            foreach (var url in foundPosts)
+            foreach (var url in postsToRemove)
             {
                 watchedPosts.RemoveItem(url);
             }
