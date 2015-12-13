@@ -194,3 +194,8 @@ FakesAssemblies/
 
 # Visual Studio 6 workspace options file
 *.opt
+
+# Ignoring a user-created docker-compose file.
+# Because these are specific to the computer you are deploying the
+# program on, we don't want this file commited to the repository.
+/docker-compose.yml
