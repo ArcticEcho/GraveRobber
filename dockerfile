@@ -31,7 +31,7 @@ COPY source/ /tmp/source/
 
 # compile it and copy the output to the /srv/graverobber directory
 RUN \
-  nuget restore /tmp/source/SOCVR.Slack.StatBot.sln && \
+  nuget restore /tmp/source/GraveRobber.sln && \
   xbuild /p:Configuration=Release /tmp/source/GraveRobber.sln && \
   mkdir -p /srv/graverobber && \
   cp /tmp/source/GraveRobber/bin/Release/* /srv/graverobber/
