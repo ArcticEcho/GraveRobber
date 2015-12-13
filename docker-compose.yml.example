@@ -2,14 +2,19 @@
 graverobber:
   # replace image with actual compiled name
   image: socvr/graverobber
+  environment:
+    - STACK_EXCHANGE_EMAIL=<email address>
+    - STACK_EXCHANGE_PASSWORD=<password>
+    - CHAT_ROOM_URL=<chat room url>
   
 # once this file is customized, follow these steps:
 
 # To get this program running in docker, follow these steps:
 #
 # 1) Customize this file.
-#    For now, all you need to do is change the image name, but if you may keep this setting
-#    or add settings of your own. Once you are done ensure the file is called "docker-compose.yml"
+#    You need to change the values in the "environment". You may also wish to change the
+#    image name if you plan on using a different name. It is also possible to add settings 
+#    of your own. Once you are done ensure the file is called "docker-compose.yml"
 #    (you need to strip off the ".example" from the file extension).
 #
 #    You may wish to add "container_name" if you plan on having multiple version of this program
