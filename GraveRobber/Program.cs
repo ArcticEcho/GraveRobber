@@ -22,7 +22,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using ChatExchangeDotNet;
 
@@ -30,6 +32,7 @@ namespace GraveRobber
 {
     class Program
     {
+        private static readonly string currentVer = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
         private static readonly ManualResetEvent shutdownMre = new ManualResetEvent(false);
         private static readonly MessageFetcher messageFetcher = new MessageFetcher();
         private static QuestionProcessor qProcessor;
@@ -41,7 +44,7 @@ namespace GraveRobber
 
         public static void Main(string[] args)
         {
-            Console.Title = "GraveRobber";
+            Console.Title = $"GraveRobber {currentVer}";
             Console.CancelKeyPress += (o, oo) =>
             {
                 oo.Cancel = true;
@@ -57,7 +60,9 @@ namespace GraveRobber
 
 #if DEBUG
             Console.WriteLine("done.\nGraveRobber started (debug).");
+            mainRoom.PostMessageFast($"GraveRobber started {currentVer} (debug).");
 #else
+            mainRoom.PostMessageFast($"GraveRobber started {currentVer}.");
             Console.WriteLine("done.\nGraveRobber started.");
 #endif
 
