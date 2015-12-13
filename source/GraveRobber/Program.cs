@@ -26,6 +26,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using ChatExchangeDotNet;
 
 namespace GraveRobber
@@ -130,6 +131,15 @@ namespace GraveRobber
                 var pendingQs = qProcessor.PostsPendingReview.Count;
                 var watchingQs = qProcessor.WatchedPosts;
                 mainRoom.PostMessageFast($"Posts being watched: `{watchingQs}`. Posts pending review: `{pendingQs}`.");
+            }
+            else if (cmd == "REFRESH")
+            {
+                mainRoom.PostMessageFast("Forcing refresh, one moment...");
+                Task.Run(() =>
+                {
+                    qProcessor.Refresh();
+                    mainRoom.PostMessageFast("Refresh complete.");
+                });
             }
             else if (cmd.StartsWith("CHECK GRAVE"))
             {

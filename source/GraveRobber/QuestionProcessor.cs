@@ -73,6 +73,11 @@ namespace GraveRobber
             queuedUrls.Enqueue(url);
         }
 
+        public void Refresh()
+        {
+            CheckPosts();
+        }
+
         public void Dispose()
         {
             if (dispose) return;
