@@ -19,15 +19,79 @@
 
 
 
-
+using System;
 using System.IO;
 
 namespace GraveRobber
 {
+    /// <summary>
+    /// Searches through enviornmnet variables (for docker) or the configuration file 
+    /// for values that help to initiate this program.
+    /// </summary>
     class ConfigReader
     {
-        public string GetSetting(string settingName)
+        /// <summary>
+        /// Gets the Stack Exchange email address for the account to use.
+        /// Important, this must be a Stack Exchange OAuth account.
+        /// </summary>
+        public string AccountEmailAddress
         {
+            get
+            {
+                return GetSetting("STACK_EXCHANGE_EMAIL", "SE Email");
+            }
+        }
+
+        /// <summary>
+        /// Gets the password for the account to use.
+        /// </summary>
+        public string AccountPassword
+        {
+            get
+            {
+                return GetSetting("STACK_EXCHANGE_PASSWORD", "SE Password");
+            }
+        }
+
+        /// <summary>
+        /// The room this bot will join, listen to, and post messages to.
+        /// </summary>
+        public string RoomUrl
+        {
+            get
+            {
+                return GetSetting("CHAT_ROOM_URL", "RoomURL");
+            }
+        }
+
+        /// <summary>
+        /// Attempts to find the config value based on the given key names.
+        /// The first check will be at environment variables.
+        /// The second check will be at the static settings file.
+        /// If the value cannot be found in either location, a null value will be returned.
+        /// </summary>
+        /// <param name="enviornmentVariableName">The expected name of the enviornment variable.</param>
+        /// <param name="settingName">The expected name of the config value in the settings file.</param>
+        /// <returns></returns>
+        private string GetSetting(string enviornmentVariableName, string settingName)
+        {
+            //first, check if the value exists in an enviornment variable (for docker)
+            var envValue = Environment.GetEnvironmentVariable(enviornmentVariableName);
+
+            if (!string.IsNullOrWhiteSpace(envValue))
+            {
+                return envValue;
+            }
+
+            //else, check the config file
+
+            //does the settings.txt file exist?
+            if (!File.Exists("settings.txt"))
+            {
+                //file does not exist, return null now
+                return null;
+            }
+
             var st = settingName.ToLowerInvariant();
             var dataz = File.ReadAllLines("settings.txt");
 
@@ -39,6 +103,7 @@ namespace GraveRobber
                 }
             }
 
+            //it's not in the config file, return null.
             return null;
         }
     }
