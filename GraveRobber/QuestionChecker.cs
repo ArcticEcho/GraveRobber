@@ -30,21 +30,14 @@ namespace GraveRobber
 {
     public static class QuestionChecker
     {
-        private static Regex postIDRegex = new Regex(@"(?i)q(uestions)?/(\d+)", RegexOptions.Compiled);
-        private static Regex revsTableRegex = new Regex(@"(?s)(<table>.*?</table>)", RegexOptions.Compiled);
-        private static Regex revsRegex = new Regex("(?s)(<tr class=\"((vote|owner)-)?revision\".*?</tr>)", RegexOptions.Compiled);
-        private static Regex closedRegex = new Regex("(?s)(<td class=.*<b>Post Closed</b>)", RegexOptions.Compiled);
-        private static Regex reopenedRegex = new Regex("(?s)(<td class=.*<b>Post Reopened</b>)", RegexOptions.Compiled);
+        private const RegexOptions regOpts = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        private static Regex postIDRegex = new Regex(@"(?i)q(uestions)?/(\d+)", regOpts);
+        private static Regex revsTableRegex = new Regex(@"(?s)(<table>.*?</table>)", regOpts);
+        private static Regex revsRegex = new Regex("(?s)(<tr class=\"((vote|owner)-)?revision\".*?</tr>)", regOpts);
+        private static Regex closedRegex = new Regex("(?s)(<td class=.*<b>Post Closed</b>)", regOpts);
+        private static Regex reopenedRegex = new Regex("(?s)(<td class=.*<b>Post Reopened</b>)", regOpts);
+        private static Regex closeDateRegex = new Regex("(?i)<span title=\"(.*?)\" class=\"relativetime\">", regOpts);
         private static WebClient wc = new WebClient();
-
-        [Flags]
-        public enum Status
-        {
-            Open = 1,
-            Closed = 2,
-            Edited = 4,
-            Reopened = 8
-        }
 
 
 
@@ -56,13 +49,13 @@ namespace GraveRobber
 
             if (htmls == null) return null;
 
-            var st = IsClosedOrReopened(htmls);
+            var closeDate = ClosedAt(htmls);
             var edits = EditsSinceClosure(htmls);
 
             return new QuestionStatus
             {
                 Url = url,
-                Status = st,
+                CloseDate = closeDate,
                 EditsSinceClosure = edits
             };
         }
@@ -94,22 +87,23 @@ namespace GraveRobber
             }
         }
 
-        private static Status IsClosedOrReopened(List<string> revs)
+        private static DateTime? ClosedAt(List<string> revs)
         {
             for (var i = 0; i < revs.Count; i++)
             {
                 if (closedRegex.IsMatch(revs[i]))
                 {
-                    return Status.Closed;
+                    var date = closeDateRegex.Match(revs[i]).Groups[1].Value;
+                    return DateTime.Parse(date);
                 }
 
                 if (reopenedRegex.IsMatch(revs[i]))
                 {
-                    return Status.Reopened;
+                    return null;
                 }
             }
 
-            return Status.Open;
+            return null;
         }
 
         private static int EditsSinceClosure(List<string> revs)

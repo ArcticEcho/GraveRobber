@@ -25,8 +25,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using ChatExchangeDotNet;
-using ServiceStack.Text;
-using static GraveRobber.QuestionChecker;
 
 namespace GraveRobber
 {
@@ -68,8 +66,9 @@ namespace GraveRobber
             Console.Write("Stopping...");
 
             mainRoom?.Leave();
-            shutdownMre.Dispose();
+            shutdownMre?.Dispose();
             chatClient?.Dispose();
+            qProcessor?.Dispose();
 
             Console.WriteLine("done.");
         }
@@ -140,26 +139,25 @@ namespace GraveRobber
                     }
                 }
 
-                mainRoom.PostMessageFast("Digging up graves, one moment...");
                 CheckGrave(postCount);
             }
         }
 
         private static void CheckGrave(int postCount)
         {
+            mainRoom.PostMessageFast("Digging up graves, one moment...");
+
             try
             {
                 var chatMsg = new MessageBuilder();
                 var posts = new HashSet<QuestionStatus>();
 
-                foreach (var entry in qProcessor.PostsPendingReview)
+                foreach (var post in qProcessor.PostsPendingReview)
                 {
                     if (posts.Count > postCount) break;
 
-                    var post = (QuestionStatus)entry.Data;
-
                     posts.Add(post);
-                    chatMsg.AppendText($"{post.Status}, edited {post.EditsSinceClosure} time(s): {post.Url}\n");
+                    chatMsg.AppendText($"Edited {post.EditsSinceClosure} time(s): {post.Url}\n");
                 }
 
                 if (!String.IsNullOrWhiteSpace(chatMsg.ToString()))

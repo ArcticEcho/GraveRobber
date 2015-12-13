@@ -33,7 +33,7 @@ namespace GraveRobber
     /// <summary>
     /// Stolen and modified from the Phamhilator project.
     /// </summary>
-    public partial class Logger<T> : IEnumerable<Logger<T>.Entry>, IDisposable
+    public partial class Logger<T> : IEnumerable<T>, IDisposable
     {
         private readonly ManualResetEvent itemRemoverMre = new ManualResetEvent(false);
         private readonly HashSet<T> removeItemsQueue = new HashSet<T>();
@@ -45,6 +45,8 @@ namespace GraveRobber
 
         public TimeSpan? TimeToLive { get; }
 
+        public Func<T, bool> ItemRemovalPredicate { get; }
+
         public int Count { get; private set; }
 
         public Action<T> ItemRemovedEvent { get; set; }
@@ -53,8 +55,10 @@ namespace GraveRobber
 
 
 
-        public Logger(string logFileName)
+        public Logger(string logFileName, Func<T, bool> itemRemovalPredicate, TimeSpan? flushRate = null)
         {
+            ItemRemovalPredicate = itemRemovalPredicate;
+            FlushRate = flushRate ?? TimeSpan.FromMinutes(30);
             logPath = logFileName;
 
             InitialiseCount();
@@ -62,10 +66,10 @@ namespace GraveRobber
             Task.Run(() => RemoveItems());
         }
 
-        public Logger(string logFileName, TimeSpan itemTtl, TimeSpan flushRate)
+        public Logger(string logFileName, TimeSpan itemTtl, TimeSpan? flushRate = null)
         {
             TimeToLive = itemTtl;
-            FlushRate = flushRate;
+            FlushRate = flushRate ?? TimeSpan.FromMinutes(30);
             logPath = logFileName;
 
             InitialiseCount();
@@ -90,7 +94,7 @@ namespace GraveRobber
             GC.SuppressFinalize(this);
         }
 
-        public IEnumerator<Entry> GetEnumerator()
+        public IEnumerator<T> GetEnumerator()
         {
             lock (lockObj)
             {
@@ -101,10 +105,11 @@ namespace GraveRobber
                     if (string.IsNullOrWhiteSpace(line)) continue;
 
                     var entry = JsonSerializer.DeserializeFromString<Entry>(line);
+                    var data = (T)entry.Data;
 
-                    if (removeItemsQueue.Contains((T)entry.Data)) continue;
+                    if (removeItemsQueue.Contains(data)) continue;
 
-                    yield return entry;
+                    yield return data;
                 }
             }
         }
@@ -194,8 +199,6 @@ namespace GraveRobber
 
         private void RemoveItems()
         {
-            var clearRate = TimeToLive == null ? TimeSpan.FromMinutes(5) : FlushRate;
-
             while (!dispose)
             {
                 if (TimeToLive != null || removeItemsQueue.Count > 0)
@@ -214,7 +217,9 @@ namespace GraveRobber
 
                             if (!removeItemsQueue.Contains(data))
                             {
-                                if (TimeToLive != null && (DateTime.UtcNow - entry.Timestamp) < TimeToLive)
+                                // If EntryRemovalPredicate hasn't been specified, base removal on TTL.
+                                if ((TimeToLive != null && (DateTime.UtcNow - entry.Timestamp) < TimeToLive) ||
+                                    (ItemRemovalPredicate != null && !ItemRemovalPredicate(data)))
                                 {
                                     File.AppendAllLines(temp, new[] { line });
                                 }
@@ -241,7 +246,7 @@ namespace GraveRobber
                     Task.Run(CollectionCheckedEvent);
                 }
 
-                itemRemoverMre.WaitOne(clearRate);
+                itemRemoverMre.WaitOne(FlushRate);
             }
         }
 

@@ -24,13 +24,10 @@ using System;
 
 namespace GraveRobber
 {
-    public class QuestionStatus
+    public class QueuedQuestion
     {
         public string Url { get; set; }
-
-        public DateTime? CloseDate { get; set; }
-
-        public int EditsSinceClosure { get; set; }
+        public DateTime CloseDate { get; set; }
 
 
 
@@ -41,9 +38,9 @@ namespace GraveRobber
 
         public override bool Equals(object obj)
         {
-            if (obj == null || !(obj is QuestionStatus)) return false;
+            if (obj == null || !(obj is QueuedQuestion)) return false;
 
-            return Url == ((QuestionStatus)obj).Url;
+            return Url == ((QueuedQuestion)obj).Url;
         }
     }
 }
