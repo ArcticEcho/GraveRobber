@@ -84,8 +84,8 @@ namespace GraveRobber
         {
             var cr = new ConfigReader();
 
-            var email = cr.GetSetting("se email");
-            var pwd = cr.GetSetting("se pass");
+            var email = cr.AccountEmailAddress;
+            var pwd = cr.AccountPassword;
 
             chatClient = new Client(email, pwd);
         }
@@ -99,7 +99,7 @@ namespace GraveRobber
         {
             var cr = new ConfigReader();
 
-            mainRoom = chatClient.JoinRoom(cr.GetSetting("room"));
+            mainRoom = chatClient.JoinRoom(cr.RoomUrl);
             mainRoom.InitialisePrimaryContentOnly = true;
             mainRoom.EventManager.ConnectListener(EventType.UserMentioned, new Action<Message>(HandleCommand));
 

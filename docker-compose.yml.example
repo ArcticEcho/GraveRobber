@@ -1,0 +1,39 @@
+
+graverobber:
+  # replace image with actual compiled name
+  image: socvr/graverobber
+  environment:
+    - STACK_EXCHANGE_EMAIL=<email address>
+    - STACK_EXCHANGE_PASSWORD=<password>
+    - CHAT_ROOM_URL=<chat room url>
+  
+# once this file is customized, follow these steps:
+
+# To get this program running in docker, follow these steps:
+#
+# 1) Customize this file.
+#    You need to change the values in the "environment". You may also wish to change the
+#    image name if you plan on using a different name. It is also possible to add settings 
+#    of your own. Once you are done ensure the file is called "docker-compose.yml"
+#    (you need to strip off the ".example" from the file extension).
+#
+#    You may wish to add "container_name" if you plan on having multiple version of this program
+#    running or have a large amount of other docker containers on the computer.
+#
+# 2) Build the image.
+#    From the root directory for this repository, run this command:
+#
+#        docker build -t <desired-image-name> .
+#
+#    Replace <desired-image-name> with what you want the image to be called. Suggestion is "socvr/graverobber".
+#    You may also add a version number or version name (add ":1.0.0" or ":primary" to the end of the image name).
+#    Remember, it is important to put a period at the end of the command. This tells the builder
+#    to use the current directory.
+#
+# 3) Compose the service
+#    Use the following command to start the program in the docker system:
+#
+#        docker-compose up -d
+#
+#    This uses this file (the docker-compose.yml file) in the current directory to create a new container
+#    or update the existing one.
