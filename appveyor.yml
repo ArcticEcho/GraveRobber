@@ -12,7 +12,7 @@ assembly_info:
   assembly_informational_version: '0.5.1-beta'
 
 before_build:
-- nuget restore
+- nuget restore source\GraveRobber.sln
 
 build:
   project: source\GraveRobber.sln
