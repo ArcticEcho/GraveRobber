@@ -43,10 +43,6 @@ namespace GraveRobber
 
         public TimeSpan FlushRate { get; }
 
-        public TimeSpan? TimeToLive { get; }
-
-        public Func<T, bool> ItemRemovalPredicate { get; }
-
         public int Count { get; private set; }
 
         public Action<T> ItemRemovedEvent { get; set; }
@@ -55,22 +51,15 @@ namespace GraveRobber
 
 
 
-        public Logger(string logFileName, Func<T, bool> itemRemovalPredicate, TimeSpan? flushRate = null)
+        public Logger(string logFileName, TimeSpan? flushRate = null)
         {
-            ItemRemovalPredicate = itemRemovalPredicate;
             FlushRate = flushRate ?? TimeSpan.FromMinutes(30);
             logPath = logFileName;
 
-            InitialiseCount();
-
-            Task.Run(() => RemoveItems());
-        }
-
-        public Logger(string logFileName, TimeSpan itemTtl, TimeSpan? flushRate = null)
-        {
-            TimeToLive = itemTtl;
-            FlushRate = flushRate ?? TimeSpan.FromMinutes(30);
-            logPath = logFileName;
+            if (!File.Exists(logFileName))
+            {
+                File.Create(logFileName).Dispose();
+            }
 
             InitialiseCount();
 
@@ -201,7 +190,9 @@ namespace GraveRobber
         {
             while (!dispose)
             {
-                if (TimeToLive != null || removeItemsQueue.Count > 0)
+                itemRemoverMre.WaitOne(FlushRate);
+
+                if (removeItemsQueue.Count > 0)
                 {
                     lock (lockObj)
                     {
@@ -217,18 +208,7 @@ namespace GraveRobber
 
                             if (!removeItemsQueue.Contains(data))
                             {
-                                // If EntryRemovalPredicate hasn't been specified, base removal on TTL.
-                                if ((TimeToLive != null && (DateTime.UtcNow - entry.Timestamp) < TimeToLive) ||
-                                    (ItemRemovalPredicate != null && !ItemRemovalPredicate(data)))
-                                {
-                                    File.AppendAllLines(temp, new[] { line });
-                                }
-                                else
-                                {
-                                    if (ItemRemovedEvent == null) continue;
-
-                                    ItemRemovedEvent(data);
-                                }
+                                File.AppendAllLines(temp, new[] { line });
                             }
                             else
                             {
@@ -245,8 +225,6 @@ namespace GraveRobber
                 {
                     Task.Run(CollectionCheckedEvent);
                 }
-
-                itemRemoverMre.WaitOne(FlushRate);
             }
         }
 

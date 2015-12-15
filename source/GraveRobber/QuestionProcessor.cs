@@ -47,11 +47,11 @@ namespace GraveRobber
             queuedUrls = new ConcurrentQueue<string>();
 
             // Queued posts to check back on later.
-            watchedPosts = new Logger<QueuedQuestion>("watched-posts.txt", new Func<QueuedQuestion, bool>(qq => false));
+            watchedPosts = new Logger<QueuedQuestion>("watched-posts.txt");
             watchedPosts.CollectionCheckedEvent = new Action(CheckPosts);
 
             // Save any active posts (rather than caching them).
-            PostsPendingReview = new Logger<QuestionStatus>("posts-pending-review.txt", new Func<QuestionStatus, bool>(qq => false));
+            PostsPendingReview = new Logger<QuestionStatus>("posts-pending-review.txt");
 
             Task.Run(() => ProcessUrlQueue());
         }
