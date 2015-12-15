@@ -128,9 +128,9 @@ namespace GraveRobber
             }
             else if (cmd == "COMMANDS")
             {
-                mainRoom.PostMessageFast("    commands ~~~~~~~~~~~~~ Prints this beautifully formatted message (try not to cry).\n" +
-                                         "    stats ~~~~~~~~~~~~~~~~ Posts a message stating how many posts are being watched and how many are ready for review.\n" +
-                                         "    refresh ~~~~~~~~~~~~~~ Forces a refresh of the \"edited closed posts\" list.\n" +
+                mainRoom.PostMessageFast("    commands ~~~~~~~~~~~~~ Prints this beautifully formatted message.\n" +
+                                         "    stats ~~~~~~~~~~~~~~~~ Prints the number of posts being watched and, closed and edited.\n" +
+                                         "    refresh ~~~~~~~~~~~~~~ Forces a refresh of the \"closed edited posts\" list.\n" +
                                          "    check grave <number> ~ Posts a list of edited closed posts (default of ten, unless specified).");
             }
             else if (cmd == "STATS")

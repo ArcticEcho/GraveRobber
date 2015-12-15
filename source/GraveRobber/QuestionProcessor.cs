@@ -100,15 +100,19 @@ namespace GraveRobber
             {
                 Thread.Sleep(2000);
 
-                // Check for dupes (and other conditions).
-                if (dispose || queuedUrls.Count == 0 ||
-                    watchedPosts.Any(x => x.Url == url) ||
-                    PostsPendingReview.Any(x => x.Url == url))
+                if (dispose || queuedUrls.Count == 0)
                 {
                     continue;
                 }
 
                 queuedUrls.TryDequeue(out url);
+
+                if (watchedPosts.Any(x => x.Url == url) ||
+                    PostsPendingReview.Any(x => x.Url == url))
+                {
+                    continue;
+                }
+
                 var date = GetQuestionStatus(url)?.CloseDate;
 
                 // Ignore the post as it is either open or deleted.

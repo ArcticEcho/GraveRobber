@@ -34,8 +34,10 @@ namespace GraveRobber
 {
     public class MessageFetcher
     {
-        private readonly Regex cvplsMsg = new Regex(@"(?i)^←?\[tag:cv-?pl[zs]\].*https?://\S+?", RegexOptions.Compiled);
-        private readonly Regex cvplsPostUrl = new Regex(@"(https?://\S*?)(\s|\z)", RegexOptions.Compiled);
+        private const RegexOptions regOpts = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        private readonly Regex cvplsMsg = new Regex(@"(?i)^←?\[tag:cv-?pl[zs]\].*https?://\S+?", regOpts);
+        private readonly Regex cvplsPostUrl = new Regex(@"(https?://stackoverflow\.com/q\S*?)(\s|\z)", regOpts);
+        private readonly Regex dupeReq = new Regex(@"cv-?pl[sz][^a-z0-9]+dup(e(licate)?)?.*https?://\S+", regOpts);
         private readonly string fkey;
 
 
@@ -82,7 +84,7 @@ namespace GraveRobber
 
         public string GetPostUrl(Message message)
         {
-            if (cvplsMsg.IsMatch(message.Content))
+            if (cvplsMsg.IsMatch(message.Content) && !dupeReq.IsMatch(message.Content))
             {
                 var postUrl = cvplsPostUrl.Match(message.Content).Groups[1].Value.Trim();
                 postUrl = postUrl.EndsWith(")") ? postUrl.Substring(0, postUrl.Length - 1) : postUrl;
