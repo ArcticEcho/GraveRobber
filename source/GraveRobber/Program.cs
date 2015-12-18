@@ -186,7 +186,7 @@ namespace GraveRobber
                     if (posts.Count > postCount) break;
 
                     posts.Add(post);
-                    chatMsg.AppendText($"Edited {post.EditsSinceClosure} time(s), {Math.Round(post.Difference, 1)}% change: {post.Url}\n");
+                    chatMsg.AppendText($"Edited {post.EditsSinceClosure} time(s), {Math.Round(post.Difference * 100, 1)}% change: {post.Url}\n");
                 }
 
                 if (!String.IsNullOrWhiteSpace(chatMsg.ToString()))
