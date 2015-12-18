@@ -30,13 +30,15 @@ namespace GraveRobber
 {
     public static class QuestionChecker
     {
+        private const string revUrl = "http://stackoverflow.com/revisions/";
         private const RegexOptions regOpts = RegexOptions.Compiled | RegexOptions.CultureInvariant;
         private static Regex postIDRegex = new Regex(@"(?i)q(uestions)?/(\d+)", regOpts);
         private static Regex revsTableRegex = new Regex(@"(?s)(<table>.*?</table>)", regOpts);
-        private static Regex revsRegex = new Regex("(?s)(<tr class=\"((vote|owner)-)?revision\".*?</tr>)", regOpts);
+        private static Regex revRegex = new Regex("(?s)(<tr class=\"((vote|owner)-)?revision\".*?</tr>)", regOpts);
         private static Regex closedRegex = new Regex("(?s)(<td class=.*<b>Post Closed</b>)", regOpts);
         private static Regex reopenedRegex = new Regex("(?s)(<td class=.*<b>Post Reopened</b>)", regOpts);
         private static Regex closeDateRegex = new Regex("(?i)<span title=\"(.*?)\" class=\"relativetime\">", regOpts);
+        private static Regex revIDRegex = new Regex("^<tr class=\"(owner-)?revision\">\\s+<td class=\"revcell1 vm\" onclick=\"StackExchange.revisions.toggle\\('([a-f0-9\\-]+)'\\)", regOpts);
         private static WebClient wc = new WebClient();
 
 
@@ -45,41 +47,43 @@ namespace GraveRobber
         {
             if (String.IsNullOrWhiteSpace(url) || !postIDRegex.IsMatch(url)) return null;
 
-            var htmls = GetRevisionsHtml(url);
+            var revs = GetRevisionsHtml(url);
 
-            if (htmls == null) return null;
+            if (revs == null) return null;
 
-            var closeDate = ClosedAt(htmls);
-            var edits = EditsSinceClosure(htmls);
+            var closeDate = ClosedAt(revs);
+            var edits = EditsSinceClosure(revs);
+            var diff = CalcDiff(revs);
 
             return new QuestionStatus
             {
                 Url = url,
                 CloseDate = closeDate,
-                EditsSinceClosure = edits
+                EditsSinceClosure = edits,
+                Difference = diff
             };
         }
 
 
 
-
-        private static List<string> GetRevisionsHtml(string url)
+        private static List<KeyValuePair<string, string>> GetRevisionsHtml(string url)
         {
             try
             {
                 var id = postIDRegex.Match(url).Groups[2].Value;
-                var html = wc.DownloadString($"http://stackoverflow.com/posts/{id}/revisions");
-                html = revsTableRegex.Match(html).Groups[1].Value;
+                var revTable = wc.DownloadString($"http://stackoverflow.com/posts/{id}/revisions");
+                revTable = revsTableRegex.Match(revTable).Groups[1].Value;
 
-                var matches = revsRegex.Matches(html);
-                var revsHtml = new List<string>();
+                var revMatches = new List<Match>(revRegex.Matches(revTable).Cast<Match>());
+                var revHtmls = new List<KeyValuePair<string, string>>();
 
-                foreach (Match m in matches)
+                for (var i = 0; i < revMatches.Count; i++)
                 {
-                    revsHtml.Add(m.Value);
+                    var revID = revIDRegex.Match(revMatches[i].Value).Groups[2].Value;
+                    revHtmls.Add(new KeyValuePair<string, string>(revID, revMatches[i].Value));
                 }
 
-                return revsHtml;
+                return revHtmls;
             }
             catch
             {
@@ -87,17 +91,61 @@ namespace GraveRobber
             }
         }
 
-        private static DateTime? ClosedAt(List<string> revs)
+        private static float CalcDiff(List<KeyValuePair<string, string>> revs)
         {
+            var closeIndex = 0;
+            var revIdBeforeClose = 0;
+            var latestRevI = -1;
             for (var i = 0; i < revs.Count; i++)
             {
-                if (closedRegex.IsMatch(revs[i]))
+                if (closedRegex.IsMatch(revs[i].Value))
                 {
-                    var date = closeDateRegex.Match(revs[i]).Groups[1].Value;
+                    closeIndex = i;
+                }
+                if (latestRevI == -1 && revIDRegex.IsMatch(revs[i].Value))
+                {
+                    latestRevI = i;
+                }
+            }
+
+            for (var i = closeIndex; i < revs.Count; i++)
+            {
+                if (revIDRegex.IsMatch(revs[i].Value))
+                {
+                    revIdBeforeClose = i;
+                    break;
+                }
+            }
+
+            if (closeIndex == 0 || latestRevI == revIdBeforeClose) return -1;
+
+            try
+            {
+                var latestUrl = $"{revUrl}{revs[latestRevI].Key}/view-source";
+                var urlBeforeClose = $"{revUrl}{revs[revIdBeforeClose].Key}/view-source";
+                var latestRev = wc.DownloadString(latestUrl);
+                var revBeforeClose = wc.DownloadString(urlBeforeClose);
+
+                return LevenshteinDistance.Calculate(revBeforeClose, latestRev, int.MaxValue) / Math.Max((float)revBeforeClose.Length, latestRev.Length);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return -1;
+            }
+        }
+
+        private static DateTime? ClosedAt(List<KeyValuePair<string, string>> revs)
+        {
+            foreach (var rev in revs)
+            {
+                if (closedRegex.IsMatch(rev.Value))
+                {
+                    var date = closeDateRegex.Match(rev.Value).Groups[1].Value;
                     return DateTime.Parse(date);
                 }
 
-                if (reopenedRegex.IsMatch(revs[i]))
+                if (reopenedRegex.IsMatch(rev.Value))
                 {
                     return null;
                 }
@@ -106,25 +154,25 @@ namespace GraveRobber
             return null;
         }
 
-        private static int EditsSinceClosure(List<string> revs)
+        private static int EditsSinceClosure(List<KeyValuePair<string, string>> revs)
         {
             var editCount = 0;
 
-            for (var i = 0; i < revs.Count; i++)
+            foreach (var rev in revs)
             {
-                if (revs[i].StartsWith("<tr class=\"revision\"") ||
-                    revs[i].StartsWith("<tr class=\"owner-revision\""))
+                if (rev.Value.StartsWith("<tr class=\"revision\"") ||
+                    rev.Value.StartsWith("<tr class=\"owner-revision\""))
                 {
                     editCount++;
                     continue;
                 }
 
-                if (closedRegex.IsMatch(revs[i]))
+                if (closedRegex.IsMatch(rev.Value))
                 {
                     return editCount;
                 }
 
-                if (reopenedRegex.IsMatch(revs[i]))
+                if (reopenedRegex.IsMatch(rev.Value))
                 {
                     return 0;
                 }

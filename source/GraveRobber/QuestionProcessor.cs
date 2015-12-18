@@ -98,7 +98,7 @@ namespace GraveRobber
 
             while (!dispose)
             {
-                Thread.Sleep(2000);
+                Thread.Sleep(3000);
 
                 if (dispose || queuedUrls.Count == 0)
                 {
@@ -134,7 +134,7 @@ namespace GraveRobber
             {
                 if ((DateTime.UtcNow - post.CloseDate).TotalDays < 1) continue;
 
-                Thread.Sleep(2000);
+                Thread.Sleep(3000);
 
                 if (dispose) return;
 

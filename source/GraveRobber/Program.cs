@@ -144,8 +144,15 @@ namespace GraveRobber
                 mainRoom.PostMessageFast("Forcing refresh, one moment...");
                 Task.Run(() =>
                 {
-                    qProcessor.Refresh();
-                    mainRoom.PostMessageFast("Refresh complete.");
+                    try
+                    {
+                        qProcessor.Refresh();
+                        mainRoom.PostMessageFast("Refresh complete.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                    }
                 });
             }
             else if (cmd.StartsWith("CHECK GRAVE"))
@@ -179,7 +186,7 @@ namespace GraveRobber
                     if (posts.Count > postCount) break;
 
                     posts.Add(post);
-                    chatMsg.AppendText($"Edited {post.EditsSinceClosure} time(s): {post.Url}\n");
+                    chatMsg.AppendText($"Edited {post.EditsSinceClosure} time(s), {Math.Round(post.Difference, 1)}% change: {post.Url}\n");
                 }
 
                 if (!String.IsNullOrWhiteSpace(chatMsg.ToString()))

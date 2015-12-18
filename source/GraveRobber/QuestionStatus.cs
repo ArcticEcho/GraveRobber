@@ -32,6 +32,8 @@ namespace GraveRobber
 
         public int EditsSinceClosure { get; set; }
 
+        public float Difference { get; set; }
+
 
 
         public override int GetHashCode()
