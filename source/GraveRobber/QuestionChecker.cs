@@ -147,7 +147,7 @@ namespace GraveRobber
             }
             catch (Exception ex)
             {
-                // Probably hit a tag-only edit.
+                // Probably hit a tag-only/title-only edit.
                 Console.WriteLine(ex);
                 return -1;
             }

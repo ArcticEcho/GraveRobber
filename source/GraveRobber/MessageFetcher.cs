@@ -37,7 +37,7 @@ namespace GraveRobber
         private const RegexOptions regOpts = RegexOptions.Compiled | RegexOptions.CultureInvariant;
         private readonly Regex cvplsMsg = new Regex(@"(?i)^←?\[tag:cv-?pl[zs]\].*https?://\S+?", regOpts);
         private readonly Regex cvplsPostUrl = new Regex(@"(https?://stackoverflow\.com/q\S*?)(\s|\z)", regOpts);
-        private readonly Regex dupeReq = new Regex(@"cv-?pl[sz][^a-z0-9]+dup(e(licate)?)?.*https?://\S+", regOpts);
+        private readonly Regex dupeReq = new Regex(@"(?i)cv-?pl[sz][^a-z0-9]+dup(e(licate)?)?.*https?://\S+", regOpts);
         private readonly string fkey;
 
 

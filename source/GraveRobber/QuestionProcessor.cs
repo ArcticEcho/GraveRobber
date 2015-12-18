@@ -98,7 +98,7 @@ namespace GraveRobber
 
             while (!dispose)
             {
-                Thread.Sleep(3000);
+                Thread.Sleep(1000);
 
                 if (dispose || queuedUrls.Count == 0)
                 {
@@ -134,14 +134,15 @@ namespace GraveRobber
             {
                 if ((DateTime.UtcNow - post.CloseDate).TotalDays < 1) continue;
 
-                Thread.Sleep(3000);
+                Thread.Sleep(1000);
 
                 if (dispose) return;
 
                 var status = GetQuestionStatus(post.Url);
 
                 if (status?.CloseDate != null &&
-                    status.EditsSinceClosure > 0)
+                    status.EditsSinceClosure > 0 &&
+                    status.Difference > 0.3)
                 {
                     PostsPendingReview.EnqueueItem(status);
                     postsToRemove.Add(post);
