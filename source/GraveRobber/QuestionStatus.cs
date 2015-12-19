@@ -30,7 +30,11 @@ namespace GraveRobber
 
         public DateTime? CloseDate { get; set; }
 
-        public int EditsSinceClosure { get; set; }
+        public bool EditedSinceClosure { get; set; }
+
+        public int UpvoteCount { get; set; }
+
+        public int DownvoteCount { get; set; }
 
         public float Difference { get; set; }
 

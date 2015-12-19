@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
+using ServiceStack;
 
 namespace GraveRobber
 {
@@ -39,11 +40,12 @@ namespace GraveRobber
         private static Regex reopenedRegex = new Regex("(?s)(<td class=.*<b>Post Reopened</b>)", regOpts);
         private static Regex closeDateRegex = new Regex("(?i)<span title=\"(.*?)\" class=\"relativetime\">", regOpts);
         private static Regex revIDRegex = new Regex("^<tr class=\"(owner-)?revision\">\\s+<td class=\"revcell1 vm\" onclick=\"StackExchange.revisions.toggle\\('([a-f0-9\\-]+)'\\)", regOpts);
+        private static Regex postUrlRegex = new Regex(@"(?i)^https?://stackoverflow.com/(q(uestions)?|a)\/(\d+)", regOpts);
         private static WebClient wc = new WebClient();
 
 
 
-        public static QuestionStatus GetQuestionStatus(string url)
+        public static QuestionStatus GetQuestionStatus(string url, SELogin seLogin)
         {
             if (String.IsNullOrWhiteSpace(url) || !postIDRegex.IsMatch(url)) return null;
 
@@ -51,15 +53,23 @@ namespace GraveRobber
 
             if (revs == null) return null;
 
+            var postID = -1;
+            var trimmed = TrimUrl(url, out postID);
             var closeDate = ClosedAt(revs);
-            var edits = EditsSinceClosure(revs);
+
+            if (closeDate == null) return null;
+
+            var edited = EditedSinceClosure(revs);
             var diff = CalcDiff(revs);
+            var votes = GetVotes(postID, seLogin);
 
             return new QuestionStatus
             {
-                Url = url,
+                Url = trimmed,
                 CloseDate = closeDate,
-                EditsSinceClosure = edits,
+                EditedSinceClosure = edited,
+                UpvoteCount = votes.Key,
+                DownvoteCount = votes.Value,
                 Difference = diff
             };
         }
@@ -172,7 +182,26 @@ namespace GraveRobber
             return null;
         }
 
-        private static int EditsSinceClosure(List<KeyValuePair<string, string>> revs)
+        private static KeyValuePair<int, int> GetVotes(int postID, SELogin seLogin)
+        {
+            try
+            {
+                var res = seLogin.Get($"http://stackoverflow.com/posts/{postID}/vote-counts");
+                var json = DynamicJson.Deserialize(res);
+                var up = int.Parse((string)json.up);
+                var down = int.Parse((string)json.down);
+
+                return new KeyValuePair<int, int>(up, down);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+
+            return default(KeyValuePair<int, int>);
+        }
+
+        private static bool EditedSinceClosure(List<KeyValuePair<string, string>> revs)
         {
             var editCount = 0;
 
@@ -187,16 +216,29 @@ namespace GraveRobber
 
                 if (closedRegex.IsMatch(rev.Value))
                 {
-                    return editCount;
+                    return editCount > 0;
                 }
 
                 if (reopenedRegex.IsMatch(rev.Value))
                 {
-                    return 0;
+                    return false;
                 }
             }
 
-            return 0;
+            return false;
+        }
+
+        private static string TrimUrl(string url, out int postID)
+        {
+            postID = -1;
+            if (string.IsNullOrWhiteSpace(url)) return null;
+
+            if (!int.TryParse(postUrlRegex.Match(url).Groups[3].Value, out postID))
+            {
+                return null;
+            }
+
+            return $"http://stackoverflow.com/q/{postID}";
         }
     }
 }

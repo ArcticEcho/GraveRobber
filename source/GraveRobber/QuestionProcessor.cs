@@ -34,6 +34,7 @@ namespace GraveRobber
     {
         private ConcurrentQueue<string> queuedUrls;
         private Logger<QueuedQuestion> watchedPosts;
+        private SELogin seLogin;
         private bool dispose;
 
         public int WatchedPosts => watchedPosts?.Count ?? 0;
@@ -42,8 +43,10 @@ namespace GraveRobber
 
 
 
-        public QuestionProcessor()
+        public QuestionProcessor(SELogin seLogin)
         {
+            this.seLogin = seLogin;
+
             queuedUrls = new ConcurrentQueue<string>();
 
             // Queued posts to check back on later.
@@ -113,7 +116,7 @@ namespace GraveRobber
                     continue;
                 }
 
-                var date = GetQuestionStatus(url)?.CloseDate;
+                var date = GetQuestionStatus(url, seLogin)?.CloseDate;
 
                 // Ignore the post as it is either open or deleted.
                 if (date == null) continue;
@@ -138,11 +141,12 @@ namespace GraveRobber
 
                 if (dispose) return;
 
-                var status = GetQuestionStatus(post.Url);
+                var status = GetQuestionStatus(post.Url, seLogin);
 
                 if (status?.CloseDate != null &&
-                    status.EditsSinceClosure > 0 &&
-                    status.Difference > 0.3)
+                    status.EditedSinceClosure &&
+                    status.Difference > 0.3 && 
+                    PostsPendingReview.All(x => x.Url != status.Url))
                 {
                     PostsPendingReview.EnqueueItem(status);
                     postsToRemove.Add(post);

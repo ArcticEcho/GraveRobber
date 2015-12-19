@@ -31,25 +31,47 @@ namespace GraveRobber
     class ConfigReader
     {
         /// <summary>
-        /// Gets the Stack Exchange email address for the account to use.
-        /// Important, this must be a Stack Exchange OAuth account.
+        /// Gets the Stack Exchange email address for the primary (chat) account
+        /// to use. Important, this must be a Stack Exchange OAuth account.
         /// </summary>
-        public string AccountEmailAddress
+        public string AccountEmailAddressPrimary
         {
             get
             {
-                return GetSetting("STACK_EXCHANGE_EMAIL", "SE Email");
+                return GetSetting("STACK_EXCHANGE_EMAIL_PRIMARY", "SE Email Primary");
+            }
+        }
+        /// <summary>
+        /// Gets the Stack Exchange email address for the secondary (polling) account
+        /// to use. Important, this must be a Stack Exchange OAuth account.
+        /// </summary>
+        public string AccountEmailAddressSecondary
+        {
+            get
+            {
+                return GetSetting("STACK_EXCHANGE_EMAIL_SECONDARY", "SE Email Secondary");
             }
         }
 
         /// <summary>
-        /// Gets the password for the account to use.
+        /// Gets the password for the primary account to use.
         /// </summary>
-        public string AccountPassword
+        public string AccountPasswordPrimary
         {
             get
             {
-                return GetSetting("STACK_EXCHANGE_PASSWORD", "SE Password");
+                return GetSetting("STACK_EXCHANGE_PASSWORD_PRIMARY", "SE Password Primary");
+            }
+        }
+
+        /// <summary>
+        /// Gets the password for the secondary account to use.
+        /// </summary>
+        public string AccountPasswordSecondary
+        {
+            get
+            {
+                return GetSetting("STACK_EXCHANGE_PASSWORD_SECONDARY", "SE Password Secondary");
             }
         }
 

@@ -36,6 +36,7 @@ namespace GraveRobber
         private static readonly string currentVer = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
         private static readonly ManualResetEvent shutdownMre = new ManualResetEvent(false);
         private static readonly MessageFetcher messageFetcher = new MessageFetcher();
+        private static readonly SELogin seLogin = new SELogin();
         private static QuestionProcessor qProcessor;
         private static Client chatClient;
         private static Room mainRoom;
@@ -67,6 +68,16 @@ namespace GraveRobber
             Console.WriteLine("done.\nGraveRobber started.");
 #endif
 
+            //var ms = messageFetcher.GetRecentMessage(mainRoom, 500);
+
+            //foreach (var m in ms.Values)
+            //{
+            //    if (!string.IsNullOrWhiteSpace(m))
+            //    {
+            //        qProcessor.WatchPost(m);
+            //    }
+            //}
+
             shutdownMre.WaitOne();
 
             Console.Write("Stopping...");
@@ -85,15 +96,15 @@ namespace GraveRobber
         {
             var cr = new ConfigReader();
 
-            var email = cr.AccountEmailAddress;
-            var pwd = cr.AccountPassword;
+            chatClient = new Client(cr.AccountEmailAddressPrimary, cr.AccountPasswordPrimary);
 
-            chatClient = new Client(email, pwd);
+            seLogin.SEOpenIDLogin(cr.AccountEmailAddressSecondary, cr.AccountPasswordSecondary);
+            seLogin.SiteLogin("stackoverflow.com");
         }
 
         private static void StartQuestionProcessor()
         {
-            qProcessor = new QuestionProcessor();
+            qProcessor = new QuestionProcessor(seLogin);
         }
 
         private static void JoinRooms()
@@ -181,15 +192,16 @@ namespace GraveRobber
                 var chatMsg = new MessageBuilder();
                 var posts = new HashSet<QuestionStatus>();
 
-                foreach (var post in qProcessor.PostsPendingReview)
+                foreach (var post in qProcessor.PostsPendingReview.OrderByDescending(x => x.Difference))
                 {
                     if (posts.Count > postCount) break;
 
                     posts.Add(post);
-                    chatMsg.AppendText($"Edited {post.EditsSinceClosure} time(s), {Math.Round(post.Difference * 100, 1)}% change: {post.Url}\n");
+                    chatMsg.AppendText($"{Math.Round(post.Difference * 100)}% changed, ");
+                    chatMsg.AppendText($"score +{post.UpvoteCount}/-{Math.Abs(post.DownvoteCount)}: {post.Url}\n");
                 }
 
-                if (!String.IsNullOrWhiteSpace(chatMsg.ToString()))
+                if (!string.IsNullOrWhiteSpace(chatMsg.ToString()))
                 {
                     mainRoom.PostMessageFast(chatMsg);
 
