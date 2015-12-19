@@ -128,29 +128,21 @@ namespace GraveRobber
             }));
         }
 
+        /// <summary>
+        /// Beware, laziness ahead...
+        /// </summary>
         private static void HandleCommand(Message msg)
         {
             var cmd = msg.Content.Trim().ToUpperInvariant();
 
-            if (cmd == "DIE")
+            if (cmd == "DIE" && (msg.Author.IsRoomOwner ||
+                msg.Author.IsMod || msg.Author.ID == 2246344))
             {
                 mainRoom.PostMessageFast("Bye.");
                 shutdownMre.Set();
             }
-            else if (cmd == "COMMANDS")
-            {
-                mainRoom.PostMessageFast("    commands ~~~~~~~~~~~~~ Prints this beautifully formatted message.\n" +
-                                         "    stats ~~~~~~~~~~~~~~~~ Prints the number of posts being watched and, closed and edited.\n" +
-                                         "    refresh ~~~~~~~~~~~~~~ Forces a refresh of the \"closed edited posts\" list.\n" +
-                                         "    check grave <number> ~ Posts a list of edited closed posts (default of ten, unless specified).");
-            }
-            else if (cmd == "STATS")
-            {
-                var pendingQs = qProcessor.PostsPendingReview.Count;
-                var watchingQs = qProcessor.WatchedPosts;
-                mainRoom.PostMessageFast($"Posts being watched: `{watchingQs}`. Posts pending review: `{pendingQs}`.");
-            }
-            else if (cmd == "REFRESH")
+            else if (cmd == "REFRESH" && (msg.Author.IsRoomOwner ||
+                     msg.Author.Reputation > 3000))
             {
                 mainRoom.PostMessageFast("Forcing refresh, one moment...");
                 Task.Run(() =>
@@ -166,7 +158,8 @@ namespace GraveRobber
                     }
                 });
             }
-            else if (cmd.StartsWith("CHECK GRAVE"))
+            else if (cmd.StartsWith("CHECK GRAVE") && (msg.Author.IsRoomOwner ||
+                     msg.Author.Reputation > 3000))
             {
                 var postCount = 10;
 
@@ -180,6 +173,28 @@ namespace GraveRobber
                 }
 
                 CheckGrave(postCount);
+            }
+            else if (cmd == "COMMANDS")
+            {
+                mainRoom.PostMessageFast("    commands ~~~~~~~~~~~~~ Prints this beautifully formatted message.\n" +
+                                         "    stats ~~~~~~~~~~~~~~~~ Prints the number of posts being watched and, closed and edited.\n" +
+                                         "    refresh ~~~~~~~~~~~~~~ Forces a refresh of the \"closed edited posts\" list.\n" +
+                                         "    check grave <number> ~ Posts a list of edited closed posts (default of ten, unless specified).\n" +
+                                         "    die ~~~~~~~~~~~~~~~~~~ I die a slow and painful death.");
+            }
+            else if (cmd == "STATS")
+            {
+                var pendingQs = qProcessor.PostsPendingReview.Count;
+                var watchingQs = qProcessor.WatchedPosts;
+                mainRoom.PostMessageFast($"Posts being watched: `{watchingQs}`. Posts pending review: `{pendingQs}`.");
+            }
+            else if (cmd == "DIE")
+            {
+                mainRoom.PostReplyFast(msg, "You need to be a room owner, moderator, or Sam to kill me.");
+            }
+            else if (cmd == "REFRESH" || cmd.StartsWith("CHECK GRAVE"))
+            {
+                mainRoom.PostReplyFast(msg, "You need 3000 reputation to run this command.");
             }
         }
 
