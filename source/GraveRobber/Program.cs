@@ -37,10 +37,12 @@ namespace GraveRobber
         private static readonly ManualResetEvent shutdownMre = new ManualResetEvent(false);
         private static readonly MessageFetcher messageFetcher = new MessageFetcher();
         private static readonly SELogin seLogin = new SELogin();
+        private static readonly object lockObj = new object();
         private static QuestionProcessor qProcessor;
         private static Client chatClient;
         private static Room mainRoom;
         private static Room watchingRoom;
+        private static bool capReached;
 
 
 
@@ -98,8 +100,12 @@ namespace GraveRobber
 
             chatClient = new Client(cr.AccountEmailAddressPrimary, cr.AccountPasswordPrimary);
 
-            seLogin.SEOpenIDLogin(cr.AccountEmailAddressSecondary, cr.AccountPasswordSecondary);
-            seLogin.SiteLogin("stackoverflow.com");
+            if (!string.IsNullOrWhiteSpace(cr.AccountEmailAddressSecondary) &&
+                !string.IsNullOrWhiteSpace(cr.AccountPasswordSecondary))
+            {
+                seLogin.SEOpenIDLogin(cr.AccountEmailAddressSecondary, cr.AccountPasswordSecondary);
+                seLogin.SiteLogin("stackoverflow.com");
+            }
         }
 
         private static void StartQuestionProcessor()
@@ -119,6 +125,19 @@ namespace GraveRobber
             watchingRoom.InitialisePrimaryContentOnly = true;
             watchingRoom.EventManager.ConnectListener(EventType.MessageMovedIn, new Action<Message>(m =>
             {
+                lock (lockObj)
+                {
+                    if (qProcessor.WatchedPosts > 3600 && !capReached)
+                    {
+                        capReached = true;
+                        mainRoom.PostMessageFast("I have reached my maximum post capacity of 3,600. " +
+                            "This means @Sam hasn't gotten round to switching my internal post monitoring " +
+                            "method from aggressive polling, to monitoring websockets. Therefore, I can't " +
+                            "watch anymore posts until some are removed.");
+                        return;
+                    }
+                }
+
                 var url = messageFetcher.GetPostUrl(m);
 
                 if (!String.IsNullOrWhiteSpace(url))
@@ -144,19 +163,27 @@ namespace GraveRobber
             else if (cmd == "REFRESH" && (msg.Author.IsRoomOwner ||
                      msg.Author.Reputation > 3000))
             {
-                mainRoom.PostMessageFast("Forcing refresh, one moment...");
-                Task.Run(() =>
+                if (qProcessor.Checking)
                 {
-                    try
+                    mainRoom.PostMessageFast("The data is currently being refreshed. " +
+                        "Please wait for the current refresh operation to finish before starting a new one.");
+                }
+                else
+                {
+                    mainRoom.PostMessageFast("Forcing refresh, one moment...");
+                    Task.Run(() =>
                     {
-                        qProcessor.Refresh();
-                        mainRoom.PostMessageFast("Refresh complete.");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                    }
-                });
+                        try
+                        {
+                            qProcessor.Refresh();
+                            mainRoom.PostMessageFast("Refresh complete.");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex);
+                        }
+                    });
+                }
             }
             else if (cmd.StartsWith("CHECK GRAVE") && (msg.Author.IsRoomOwner ||
                      msg.Author.Reputation > 3000))

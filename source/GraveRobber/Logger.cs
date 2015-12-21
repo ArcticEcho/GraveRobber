@@ -53,7 +53,7 @@ namespace GraveRobber
 
         public Logger(string logFileName, TimeSpan? flushRate = null)
         {
-            FlushRate = flushRate ?? TimeSpan.FromMinutes(30);
+            FlushRate = flushRate ?? TimeSpan.FromMinutes(60);
             logPath = logFileName;
 
             if (!File.Exists(logFileName))

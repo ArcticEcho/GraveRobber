@@ -184,18 +184,21 @@ namespace GraveRobber
 
         private static KeyValuePair<int, int> GetVotes(int postID, SELogin seLogin)
         {
-            try
+            if (seLogin != null)
             {
-                var res = seLogin.Get($"http://stackoverflow.com/posts/{postID}/vote-counts");
-                var json = DynamicJson.Deserialize(res);
-                var up = int.Parse((string)json.up);
-                var down = int.Parse((string)json.down);
+                try
+                {
+                    var res = seLogin.Get($"http://stackoverflow.com/posts/{postID}/vote-counts");
+                    var json = DynamicJson.Deserialize(res);
+                    var up = int.Parse((string)json.up);
+                    var down = int.Parse((string)json.down);
 
-                return new KeyValuePair<int, int>(up, down);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
+                    return new KeyValuePair<int, int>(up, down);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
             }
 
             return default(KeyValuePair<int, int>);

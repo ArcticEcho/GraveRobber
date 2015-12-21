@@ -41,6 +41,8 @@ namespace GraveRobber
 
         public Logger<QuestionStatus> PostsPendingReview { get; }
 
+        public bool Checking { get; set; }
+
 
 
         public QuestionProcessor(SELogin seLogin)
@@ -50,7 +52,7 @@ namespace GraveRobber
             queuedUrls = new ConcurrentQueue<string>();
 
             // Queued posts to check back on later.
-            watchedPosts = new Logger<QueuedQuestion>("watched-posts.txt");
+            watchedPosts = new Logger<QueuedQuestion>("watched-posts.txt", TimeSpan.FromHours(2));
             watchedPosts.CollectionCheckedEvent = new Action(CheckPosts);
 
             // Save any active posts (rather than caching them).
@@ -101,7 +103,7 @@ namespace GraveRobber
 
             while (!dispose)
             {
-                Thread.Sleep(1000);
+                Thread.Sleep(2000);
 
                 if (dispose || queuedUrls.Count == 0)
                 {
@@ -131,13 +133,15 @@ namespace GraveRobber
 
         private void CheckPosts()
         {
+            Checking = true;
+
             var postsToRemove = new HashSet<QueuedQuestion>();
 
             foreach (var post in watchedPosts)
             {
                 if ((DateTime.UtcNow - post.CloseDate).TotalDays < 1) continue;
 
-                Thread.Sleep(1000);
+                Thread.Sleep(2000);
 
                 if (dispose) return;
 
@@ -162,6 +166,8 @@ namespace GraveRobber
             {
                 watchedPosts.RemoveItem(url);
             }
+
+            Checking = false;
         }
     }
 }

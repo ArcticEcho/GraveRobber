@@ -3,10 +3,15 @@ graverobber:
   # replace image with actual compiled name
   image: socvr/graverobber
   environment:
-    - STACK_EXCHANGE_EMAIL=<email address>
-    - STACK_EXCHANGE_PASSWORD=<password>
+    - STACK_EXCHANGE_EMAIL_PRIMARY=<chat account email address>
+    - STACK_EXCHANGE_PASSWORD_PRIMARY=<chat account password>
+    - STACK_EXCHANGE_EMAIL_SECONDARY=<data polling ccount email address>
+    - STACK_EXCHANGE_PASSWORD_SECONDARY=<data polling account password>
     - CHAT_ROOM_URL=<chat room url>
   
+# The primrary account must have +20 reputation; the secondary account must
+# have +1000 reputation (this is not necessary for core functionality, so
+# can be left blank).
 # once this file is customized, follow these steps:
 
 # To get this program running in docker, follow these steps:
