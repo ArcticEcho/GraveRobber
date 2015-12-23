@@ -32,6 +32,7 @@ namespace GraveRobber
 {
     public class QuestionProcessor : IDisposable
     {
+        private ConcurrentDictionary<string, QuestionWatcher> watchers;
         private ConcurrentQueue<string> queuedUrls;
         private Logger<QueuedQuestion> watchedPosts;
         private SELogin seLogin;
@@ -43,22 +44,49 @@ namespace GraveRobber
 
         public bool Checking { get; set; }
 
+        public Action<Exception> SeriousDamnHappened { get; set; }
+
 
 
         public QuestionProcessor(SELogin seLogin)
         {
             this.seLogin = seLogin;
-
+            watchers = new ConcurrentDictionary<string, QuestionWatcher>();
             queuedUrls = new ConcurrentQueue<string>();
 
             // Queued posts to check back on later.
             watchedPosts = new Logger<QueuedQuestion>("watched-posts.txt", TimeSpan.FromHours(2));
-            watchedPosts.CollectionCheckedEvent = new Action(CheckPosts);
 
-            // Save any active posts (rather than caching them).
+            foreach (var q in watchedPosts)
+            {
+                var id = -1;
+                TrimUrl(q.Url, out id);
+
+                watchers[q.Url] = new QuestionWatcher(id)
+                {
+                    OnException = ohNoItDidnt =>
+                    {
+                        if (SeriousDamnHappened != null)
+                        {
+                            SeriousDamnHappened(ohNoItDidnt);
+                        }
+                    },
+                    QuestionEdited = () =>
+                    {
+                        var qs = GetQuestionStatus(q.Url, seLogin);
+
+                        if (QSMatchesCriteria(qs))
+                        {
+                            PostsPendingReview.EnqueueItem(qs);
+                        }
+                    }
+                };
+            }
+
+            // Save any active posts.
             PostsPendingReview = new Logger<QuestionStatus>("posts-pending-review.txt");
 
-            Task.Run(() => ProcessUrlQueue());
+            Task.Run(() => ProcessNewUrlsQueue());
         }
 
         ~QuestionProcessor()
@@ -78,11 +106,6 @@ namespace GraveRobber
             queuedUrls.Enqueue(url);
         }
 
-        public void Refresh()
-        {
-            CheckPosts();
-        }
-
         public void Dispose()
         {
             if (dispose) return;
@@ -97,7 +120,7 @@ namespace GraveRobber
 
 
 
-        private void ProcessUrlQueue()
+        private void ProcessNewUrlsQueue()
         {
             var url = "";
 
@@ -118,56 +141,68 @@ namespace GraveRobber
                     continue;
                 }
 
-                var date = GetQuestionStatus(url, seLogin)?.CloseDate;
+                var qs = GetQuestionStatus(url, seLogin);
 
                 // Ignore the post as it is either open or deleted.
-                if (date == null) continue;
+                if (qs?.CloseDate == null) continue;
 
-                watchedPosts.EnqueueItem(new QueuedQuestion
+                if (QSMatchesCriteria(qs))
                 {
-                    Url = url,
-                    CloseDate = (DateTime)date
-                });
+                    HandleEditedQuestion(qs, false);
+                }
+                else
+                {
+                    watchedPosts.EnqueueItem(new QueuedQuestion
+                    {
+                        Url = url,
+                        CloseDate = (DateTime)qs?.CloseDate
+                    });
+                }
             }
         }
 
-        private void CheckPosts()
+        //private bool? CheckPost(QueuedQuestion post)
+        //{
+        //    if ((DateTime.UtcNow - post.CloseDate).TotalDays < 1 || dispose) return false;
+
+        //    var status = GetQuestionStatus(post.Url, seLogin);
+        //    var res = false;
+
+        //    if (QSMatchesCriteria(status))
+        //    {
+        //        PostsPendingReview.EnqueueItem(status);
+        //        res = true;
+        //    }
+        //    if (status?.CloseDate != null)
+        //    {
+        //        // Keep the post as it hasn't been reopened or deleted.
+        //        return false;
+        //    }
+
+        //    QuestionWatcher temp;
+        //    watchedPosts.RemoveItem(post);
+        //    watchers.TryRemove(post.Url, out temp);
+
+        //    return res;
+        //}
+
+        private bool QSMatchesCriteria(QuestionStatus qs) =>
+            qs.CloseDate != null &&
+            (DateTime.UtcNow - qs.CloseDate.Value).TotalDays > 1 &&
+            qs.EditedSinceClosure &&
+            qs.Difference > 0.3 &&
+            PostsPendingReview.All(x => x.Url != qs.Url);
+
+        private void HandleEditedQuestion(QuestionStatus qs, bool removeWatchedQQ = true)
         {
-            Checking = true;
+            PostsPendingReview.EnqueueItem(qs);
 
-            var postsToRemove = new HashSet<QueuedQuestion>();
-
-            foreach (var post in watchedPosts)
+            if (removeWatchedQQ)
             {
-                if ((DateTime.UtcNow - post.CloseDate).TotalDays < 1) continue;
-
-                Thread.Sleep(2000);
-
-                if (dispose) return;
-
-                var status = GetQuestionStatus(post.Url, seLogin);
-
-                if (status?.CloseDate != null &&
-                    status.EditedSinceClosure &&
-                    status.Difference > 0.3 && 
-                    PostsPendingReview.All(x => x.Url != status.Url))
-                {
-                    PostsPendingReview.EnqueueItem(status);
-                    postsToRemove.Add(post);
-                }
-                else if (status?.CloseDate == null)
-                {
-                    // Remove the post as it has been either reopened or deleted.
-                    postsToRemove.Add(post);
-                }
+                QuestionWatcher temp;
+                watchedPosts.RemoveItem(watchedPosts.First(qq => qq.Url == qs.Url));
+                watchers.TryRemove(qs.Url, out temp);
             }
-
-            foreach (var url in postsToRemove)
-            {
-                watchedPosts.RemoveItem(url);
-            }
-
-            Checking = false;
         }
     }
 }

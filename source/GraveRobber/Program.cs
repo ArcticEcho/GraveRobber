@@ -111,6 +111,7 @@ namespace GraveRobber
         private static void StartQuestionProcessor()
         {
             qProcessor = new QuestionProcessor(seLogin);
+            qProcessor.SeriousDamnHappened = ex => Console.WriteLine(ex);
         }
 
         private static void JoinRooms()
@@ -160,31 +161,6 @@ namespace GraveRobber
                 mainRoom.PostMessageFast("Bye.");
                 shutdownMre.Set();
             }
-            else if (cmd == "REFRESH" && (msg.Author.IsRoomOwner ||
-                     msg.Author.Reputation > 3000))
-            {
-                if (qProcessor.Checking)
-                {
-                    mainRoom.PostMessageFast("The data is currently being refreshed. " +
-                        "Please wait for the current refresh operation to finish before starting a new one.");
-                }
-                else
-                {
-                    mainRoom.PostMessageFast("Forcing refresh, one moment...");
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            qProcessor.Refresh();
-                            mainRoom.PostMessageFast("Refresh complete.");
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex);
-                        }
-                    });
-                }
-            }
             else if (cmd.StartsWith("CHECK GRAVE") && (msg.Author.IsRoomOwner ||
                      msg.Author.Reputation > 3000))
             {
@@ -205,7 +181,6 @@ namespace GraveRobber
             {
                 mainRoom.PostMessageFast("    commands ~~~~~~~~~~~~~ Prints this beautifully formatted message.\n" +
                                          "    stats ~~~~~~~~~~~~~~~~ Prints the number of posts being watched, and closed and edited.\n" +
-                                         "    refresh ~~~~~~~~~~~~~~ Forces a refresh of the \"closed edited posts\" list.\n" +
                                          "    check grave <number> ~ Posts a list of edited closed posts (default of ten, unless specified).\n" +
                                          "    die ~~~~~~~~~~~~~~~~~~ I die a slow and painful death.");
             }
@@ -219,7 +194,7 @@ namespace GraveRobber
             {
                 mainRoom.PostReplyFast(msg, "You need to be a room owner, moderator, or Sam to kill me.");
             }
-            else if (cmd == "REFRESH" || cmd.StartsWith("CHECK GRAVE"))
+            else if (cmd.StartsWith("CHECK GRAVE"))
             {
                 mainRoom.PostReplyFast(msg, "You need 3000 reputation to run this command.");
             }

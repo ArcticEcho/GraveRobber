@@ -74,6 +74,19 @@ namespace GraveRobber
             };
         }
 
+        public static string TrimUrl(string url, out int postID)
+        {
+            postID = -1;
+            if (string.IsNullOrWhiteSpace(url)) return null;
+
+            if (!int.TryParse(postUrlRegex.Match(url).Groups[3].Value, out postID))
+            {
+                return null;
+            }
+
+            return $"http://stackoverflow.com/q/{postID}";
+        }
+
 
 
         private static List<KeyValuePair<string, string>> GetRevisionsHtml(string url)
@@ -229,19 +242,6 @@ namespace GraveRobber
             }
 
             return false;
-        }
-
-        private static string TrimUrl(string url, out int postID)
-        {
-            postID = -1;
-            if (string.IsNullOrWhiteSpace(url)) return null;
-
-            if (!int.TryParse(postUrlRegex.Match(url).Groups[3].Value, out postID))
-            {
-                return null;
-            }
-
-            return $"http://stackoverflow.com/q/{postID}";
         }
     }
 }
