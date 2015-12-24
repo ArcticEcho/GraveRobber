@@ -62,7 +62,6 @@ namespace GraveRobber
                 { "fkey", fkey }
             }));
 
-            var msgIDs = new HashSet<string>();
             var json = JsonSerializer.DeserializeFromString<Dictionary<string, Dictionary<string, object>[]>>(jsonStr);
             var msgs = new Dictionary<Message, string>();
 
