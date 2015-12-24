@@ -24,7 +24,7 @@ using System;
 
 namespace GraveRobber
 {
-    public partial class Logger<T>
+    public sealed partial class Logger<T>
     {
         public class Entry
         {

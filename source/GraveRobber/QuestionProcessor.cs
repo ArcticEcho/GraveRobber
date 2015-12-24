@@ -117,6 +117,8 @@ namespace GraveRobber
                 w.Dispose();
             }
 
+            wc.Dispose();
+            grimReaperMre.Dispose();
             watchedPosts.Dispose();
             PostsPendingReview.Dispose();
 

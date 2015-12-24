@@ -45,7 +45,6 @@ namespace GraveRobber
 
         public static void Main(string[] args)
         {
-            Console.WriteLine($"Running at: {Assembly.GetExecutingAssembly().Location}\n");
             Console.Title = $"GraveRobber {currentVer}";
             Console.CancelKeyPress += (o, oo) =>
             {
@@ -152,9 +151,9 @@ namespace GraveRobber
             {
                 var postCount = 10;
 
-                if (cmd.Any(Char.IsDigit))
+                if (cmd.Any(char.IsDigit))
                 {
-                    if (!int.TryParse(new string(cmd.Where(Char.IsDigit).ToArray()), out postCount))
+                    if (!int.TryParse(new string(cmd.Where(char.IsDigit).ToArray()), out postCount))
                     {
                         // Well, do nothing since we've already initialised
                         // the field with a default value (of 10).
@@ -182,7 +181,7 @@ namespace GraveRobber
                 mainRoom.PostReplyFast(msg, "I *think* I'm a chatbot. Although, I do love a good " +
                                             "bit of poetry every now and then (don't ask me for any " +
                                             "though, I'm useless). I also love being in this room so much " +
-                                            "in fact, that I've decided to check up on all your \"[tag:cv-pls]\"'es " +
+                                            "in fact, that I've decided to check up on all your [tag:cv-pls]'es " +
                                             "to see if they need reopening (I'm not 100% accurate, so only take " +
                                             "messages as suggestions). You can check out what I can do by using: " +
                                             "`commands`. You can find my GH repo " +

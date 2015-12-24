@@ -1,4 +1,26 @@
-﻿using System;
+﻿/*
+ * GraveRobber. A .NET PoC program for fetching data from the SOCVR graveyards.
+ * Copyright © 2015, ArcticEcho.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
+ */
+
+
+
+
+
+using System;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -13,8 +35,6 @@ namespace GraveRobber
         private const RegexOptions regOpts = RegexOptions.Compiled | RegexOptions.CultureInvariant;
         private readonly Regex userUrl = new Regex("href=\"/users/\\d*?/", regOpts);
         private readonly Regex openidDel = new Regex("https://openid\\.stackexchange\\.com/user/.*?\"", regOpts);
-        private readonly Regex hostParser = new Regex("https?://(chat.)?|/.*", regOpts);
-        private readonly Regex idParser = new Regex(".*/rooms/|/.*", regOpts);
         private string openidUrl;
 
         public static CookieContainer Cookies { get; private set; } = new CookieContainer();
@@ -26,7 +46,9 @@ namespace GraveRobber
             var getResContent = Get("https://openid.stackexchange.com/account/login");
 
             if (string.IsNullOrEmpty(getResContent))
+            {
                 throw new Exception("Unable to find OpenID fkey.");
+            }
 
             var data = $"email={Uri.EscapeDataString(email)}&password=" +
                        $"{Uri.EscapeDataString(password)}&fkey=" +
@@ -35,9 +57,13 @@ namespace GraveRobber
             using (var res = PostRaw("https://openid.stackexchange.com/account/login/submit", data))
             {
                 if (res == null)
+                {
                     throw new Exception("Unable to authenticate using OpenID.");
+                }
                 if (res.ResponseUri.ToString() != "https://openid.stackexchange.com/user")
+                {
                     throw new Exception("Invalid OpenID credentials.");
+                }
 
                 var html = GetContent(res);
                 var del = openidDel.Match(html).Value;
@@ -51,7 +77,9 @@ namespace GraveRobber
             var getResContent = Get($"http://{host}/users/login");
 
             if (string.IsNullOrEmpty(getResContent))
+            {
                 throw new Exception($"Unable to find fkey from {host}.");
+            }
 
             var fkey = GetInputValue(CQ.Create(getResContent), "fkey");
 
@@ -64,8 +92,7 @@ namespace GraveRobber
 
             using (var postRes = PostRaw($"http://{host}/users/authenticate", data, referrer))
             {
-                if (postRes == null)
-                    throw new Exception($"Unable to login to {host}.");
+                if (postRes == null) throw new Exception($"Unable to login to {host}.");
 
                 var html = GetContent(postRes);
                 HandleConfirmationPrompt(postRes.ResponseUri.ToString(), html);
@@ -131,13 +158,6 @@ namespace GraveRobber
             return GetResponse(req);
         }
 
-        private HttpWebResponse GetRaw(string uri)
-        {
-            var req = GenerateRequest(uri, null, "GET");
-
-            return GetResponse(req);
-        }
-
         private HttpWebRequest GenerateRequest(string uri, string content, string method, string referer = null, string origin = null)
         {
             if (uri == null) throw new ArgumentNullException("uri");
@@ -188,7 +208,7 @@ namespace GraveRobber
                 }
                 else
                 {
-                    throw ex;
+                    throw;
                 }
             }
 
@@ -197,7 +217,7 @@ namespace GraveRobber
 
         private string GetContent(HttpWebResponse response)
         {
-            if (response == null) { throw new ArgumentNullException("response"); }
+            if (response == null) throw new ArgumentNullException("response");
 
             using (var strm = response.GetResponseStream())
             using (var reader = new StreamReader(strm))
