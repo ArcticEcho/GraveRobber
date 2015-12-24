@@ -192,7 +192,7 @@ namespace GraveRobber
             }
             else if (cmd.StartsWith("CHECK GRAVE"))
             {
-                mainRoom.PostReplyFast(msg, "You need 3000 reputation to run this command.");
+                mainRoom.PostReplyFast(msg, "You need at least 3000 reputation to run this command.");
             }
         }
 

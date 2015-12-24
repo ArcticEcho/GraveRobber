@@ -22,9 +22,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using ServiceStack;
 using ServiceStack.Text;
-using WebSocket4Net; // Let's try using a stable ws lib (if all goes well, I'll port this to CE.NET).
+using WebSocketSharp;
+//using WebSocket4Net; // Let's try using a stable ws lib (if all goes well, I'll port this to CE.NET).
 
 namespace GraveRobber
 {
@@ -58,7 +60,7 @@ namespace GraveRobber
             dispose = true;
 
             socket.Close();
-            socket.Dispose();
+            //socket.Dispose();
 
             GC.SuppressFinalize(this);
         }
@@ -67,12 +69,33 @@ namespace GraveRobber
 
         private void StartSocket()
         {
-            socket = new WebSocket("wss://qa.sockets.stackexchange.com");
-            socket.Opened += (o, e) => socket.Send($"1-question-{ID}");
-            socket.Closed += (o, e) => { if (!dispose) StartSocket(); };
-            socket.MessageReceived += (o, e) => HandleMessage(e.Message);
-            socket.Error += (o, e) => { if (OnException != null) OnException(e.Exception); };
-            socket.Open();
+            try
+            {
+                socket = new WebSocket("wss://qa.sockets.stackexchange.com");
+                socket.OnOpen += (o, e) => socket.Send($"1-question-{ID}");
+                socket.OnClose += (o, e) => 
+                {
+                    Thread.Sleep(5000);
+                    if (!dispose) StartSocket();
+                };
+                socket.OnError += (o, e) => { if (OnException != null) OnException(e.Exception); };
+                socket.OnMessage += (o, e) => HandleMessage(e.Data);
+                socket.Connect();
+                //socket.Opened += (o, e) => socket.Send($"1-question-{ID}");
+                //socket.Closed += (o, e) =>
+                //{
+                //    Thread.Sleep(5000);
+                //    if (!dispose) StartSocket();
+                //};
+                //socket.MessageReceived += (o, e) => HandleMessage(e.Message);
+                //socket.Error += (o, e) => { if (OnException != null) OnException(e.Exception); };
+                //socket.Open();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                if (OnException != null) OnException(ex);
+            }
         }
 
         private void HandleMessage(string msg)
