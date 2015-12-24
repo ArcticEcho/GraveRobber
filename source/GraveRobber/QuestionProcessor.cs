@@ -22,6 +22,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -85,7 +86,7 @@ namespace GraveRobber
             PostsPendingReview = new Logger<QuestionStatus>(pprPath);
 
             Task.Run(() => ProcessNewUrlsQueue());
-            Task.Run(() => GrimReaper());
+            //Task.Run(() => GrimReaper()); Disable this just for now. Until I can figure out a better way to remove dead posts.
         }
 
         ~QuestionProcessor()
@@ -129,12 +130,14 @@ namespace GraveRobber
 
         private void GrimReaper()
         {
+            var qqsToRemove = new HashSet<QueuedQuestion>();
+
             while (!dispose)
             {
                 foreach (var q in watchedPosts)
                 {
                     grimReaperMre.WaitOne(TimeSpan.FromSeconds(15));
-                    if (dispose) return;
+                    if (dispose) break;
 
                     var id = -1;
                     TrimUrl(q.Url, out id);
@@ -145,8 +148,13 @@ namespace GraveRobber
                     }
                     catch // Something bad happened, that's all we need to know.
                     {
-                        watchedPosts.RemoveItem(q);
+                        qqsToRemove.Add(q);
                     }
+                }
+
+                foreach (var q in qqsToRemove)
+                {
+                    watchedPosts.RemoveItem(q);
                 }
             }
         }
@@ -157,37 +165,44 @@ namespace GraveRobber
 
             while (!dispose)
             {
-                Thread.Sleep(2000);
-
-                if (dispose || queuedUrls.Count == 0) continue;
-
-                queuedUrls.TryDequeue(out url);
-                var id = -1;
-                var trimmed = TrimUrl(url, out id);
-
-                if (watchedPosts.Any(x => x.Url == trimmed) ||
-                    PostsPendingReview.Any(x => x.Url == trimmed))
+                try
                 {
-                    continue;
-                }
+                    Thread.Sleep(2000);
 
-                var qs = GetQuestionStatus(url, seLogin);
+                    if (dispose || queuedUrls.Count == 0) continue;
 
-                // Ignore the post as it is either open or deleted.
-                if (qs?.CloseDate == null) continue;
+                    queuedUrls.TryDequeue(out url);
+                    var id = -1;
+                    var trimmed = TrimUrl(url, out id);
 
-                if (QSMatchesCriteria(qs))
-                {
-                    HandleEditedQuestion(qs);
-                }
-                else
-                {
-                    watchedPosts.EnqueueItem(new QueuedQuestion
+                    if (watchedPosts.Any(x => x.Url == trimmed) ||
+                        PostsPendingReview.Any(x => x.Url == trimmed))
                     {
-                        Url = trimmed,
-                        CloseDate = (DateTime)qs?.CloseDate
-                    });
-                    watchers[trimmed] = CreateWatcher(qs, out trimmed);
+                        continue;
+                    }
+
+                    var qs = GetQuestionStatus(url, seLogin);
+
+                    // Ignore the post as it is either open or deleted.
+                    if (qs?.CloseDate == null) continue;
+
+                    if (QSMatchesCriteria(qs))
+                    {
+                        HandleEditedQuestion(qs);
+                    }
+                    else
+                    {
+                        watchedPosts.EnqueueItem(new QueuedQuestion
+                        {
+                            Url = trimmed,
+                            CloseDate = (DateTime)qs?.CloseDate
+                        });
+                        watchers[trimmed] = CreateWatcher(qs, out trimmed);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
                 }
             }
         }
