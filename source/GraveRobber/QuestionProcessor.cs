@@ -182,7 +182,7 @@ namespace GraveRobber
                                 HandleEditedQuestion(qs);
                             }
                         }
-                    }
+                    };
                 }
             }
         }
