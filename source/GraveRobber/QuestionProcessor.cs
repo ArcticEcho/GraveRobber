@@ -77,7 +77,7 @@ namespace GraveRobber
 
                         if (QSMatchesCriteria(qs))
                         {
-                            PostsPendingReview.EnqueueItem(qs);
+                            HandleEditedQuestion(qs);
                         }
                     }
                 };
@@ -111,6 +111,11 @@ namespace GraveRobber
             if (dispose) return;
             dispose = true;
 
+            foreach (var w in watchers.Values)
+            {
+                w.Dispose();
+            }
+
             watchedPosts.Dispose();
             PostsPendingReview.Dispose();
 
@@ -134,9 +139,11 @@ namespace GraveRobber
                 }
 
                 queuedUrls.TryDequeue(out url);
+                var id = -1;
+                var trimmed = TrimUrl(url, out id);
 
-                if (watchedPosts.Any(x => x.Url == url) ||
-                    PostsPendingReview.Any(x => x.Url == url))
+                if (watchedPosts.Any(x => x.Url == trimmed) ||
+                    PostsPendingReview.Any(x => x.Url == trimmed))
                 {
                     continue;
                 }
@@ -154,9 +161,28 @@ namespace GraveRobber
                 {
                     watchedPosts.EnqueueItem(new QueuedQuestion
                     {
-                        Url = url,
+                        Url = trimmed,
                         CloseDate = (DateTime)qs?.CloseDate
                     });
+                    watchers[trimmed] = new QuestionWatcher(id)
+                    {
+                        OnException = ex =>
+                        {
+                            if (SeriousDamnHappened != null)
+                            {
+                                SeriousDamnHappened(ex);
+                            }
+                        },
+                        QuestionEdited = () =>
+                        {
+                            var qs = GetQuestionStatus(trimmed, seLogin);
+
+                            if (QSMatchesCriteria(qs))
+                            {
+                                HandleEditedQuestion(qs);
+                            }
+                        }
+                    }
                 }
             }
         }
