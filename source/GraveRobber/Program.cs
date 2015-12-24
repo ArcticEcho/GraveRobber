@@ -190,6 +190,17 @@ namespace GraveRobber
                 var watchingQs = qProcessor.WatchedPosts;
                 mainRoom.PostMessageFast($"Posts being watched: `{watchingQs}`. Posts pending review: `{pendingQs}`.");
             }
+            else if (cmd =="HELP")
+            {
+                mainRoom.PostReplyFast(msg, "I *think* I'm a chatbot. Although, I do love a good " +
+                                            "bit of poetry ever now and then (don't ask me for any " +
+                                            "though, I'm useless). I also love being in this room so much " +
+                                            "in fact, that I've decided to check up on all your \"[tag:cv-pls]\"'es " +
+                                            "to see if they need reopening (I'm not 100% accurate, so only take " +
+                                            "messages as suggestions). You can check out what I can do by using: " +
+                                            "`commands`. You can find my GH repo " +
+                                            "[here](https://github.com/SO-Close-Vote-Reviewers/GraveRobber).");
+            }
             else if (cmd == "DIE")
             {
                 mainRoom.PostReplyFast(msg, "You need to be a room owner, moderator, or Sam to kill me.");
