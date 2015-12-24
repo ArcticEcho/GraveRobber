@@ -38,11 +38,9 @@ namespace GraveRobber
         private SELogin seLogin;
         private bool dispose;
 
-        public int WatchedPosts => watchedPosts?.Count ?? 0;
+        public int WatchedPosts => watchers?.Count ?? 0;
 
         public Logger<QuestionStatus> PostsPendingReview { get; }
-
-        public bool Checking { get; set; }
 
         public Action<Exception> SeriousDamnHappened { get; set; }
 
@@ -56,32 +54,36 @@ namespace GraveRobber
 
             // Queued posts to check back on later.
             watchedPosts = new Logger<QueuedQuestion>("watched-posts.txt", TimeSpan.FromHours(2));
-
-            foreach (var q in watchedPosts)
+            Task.Run(() =>
             {
-                var id = -1;
-                TrimUrl(q.Url, out id);
-
-                watchers[q.Url] = new QuestionWatcher(id)
+                foreach (var q in watchedPosts)
                 {
-                    OnException = ohNoItDidnt =>
-                    {
-                        if (SeriousDamnHappened != null)
-                        {
-                            SeriousDamnHappened(ohNoItDidnt);
-                        }
-                    },
-                    QuestionEdited = () =>
-                    {
-                        var qs = GetQuestionStatus(q.Url, seLogin);
+                    var id = -1;
+                    TrimUrl(q.Url, out id);
 
-                        if (QSMatchesCriteria(qs))
+                    watchers[q.Url] = new QuestionWatcher(id)
+                    {
+                        OnException = ohNoItDidnt =>
                         {
-                            HandleEditedQuestion(qs);
+                            if (SeriousDamnHappened != null)
+                            {
+                                SeriousDamnHappened(ohNoItDidnt);
+                            }
+                        },
+                        QuestionEdited = () =>
+                        {
+                            var qs = GetQuestionStatus(q.Url, seLogin);
+
+                            if (QSMatchesCriteria(qs))
+                            {
+                                HandleEditedQuestion(qs);
+                            }
                         }
-                    }
-                };
-            }
+                    };
+
+                    Thread.Sleep(2000);
+                }
+            });
 
             // Save any active posts.
             PostsPendingReview = new Logger<QuestionStatus>("posts-pending-review.txt");
