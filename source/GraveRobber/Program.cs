@@ -178,7 +178,7 @@ namespace GraveRobber
             else if (cmd =="HELP")
             {
                 mainRoom.PostReplyFast(msg, "I *think* I'm a chatbot. Although, I do love a good " +
-                                            "bit of poetry ever now and then (don't ask me for any " +
+                                            "bit of poetry every now and then (don't ask me for any " +
                                             "though, I'm useless). I also love being in this room so much " +
                                             "in fact, that I've decided to check up on all your \"[tag:cv-pls]\"'es " +
                                             "to see if they need reopening (I'm not 100% accurate, so only take " +
