@@ -22,6 +22,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -48,7 +49,7 @@ namespace GraveRobber
 
 
 
-        public QuestionProcessor(SELogin login)
+        public QuestionProcessor(SELogin login, string dataFilesDir = null)
         {
             seLogin = login;
             wc = new WebClient();
@@ -56,8 +57,17 @@ namespace GraveRobber
             queuedUrls = new ConcurrentQueue<string>();
             grimReaperMre = new ManualResetEvent(false);
 
+            var wpPath = "watched-posts.txt";
+            var pprPath = "posts-pending-review.txt";
+
+            if (!string.IsNullOrWhiteSpace(dataFilesDir))
+            {
+                wpPath = Path.Combine(dataFilesDir, wpPath);
+                pprPath = Path.Combine(dataFilesDir, pprPath);
+            }
+
             // Queued posts to check back on later.
-            watchedPosts = new Logger<QueuedQuestion>("watched-posts.txt");
+            watchedPosts = new Logger<QueuedQuestion>(wpPath);
             Task.Run(() =>
             {
                 foreach (var q in watchedPosts)
@@ -72,7 +82,7 @@ namespace GraveRobber
             });
 
             // Save any active posts.
-            PostsPendingReview = new Logger<QuestionStatus>("posts-pending-review.txt");
+            PostsPendingReview = new Logger<QuestionStatus>(pprPath);
 
             Task.Run(() => ProcessNewUrlsQueue());
             Task.Run(() => GrimReaper());

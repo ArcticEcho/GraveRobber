@@ -107,7 +107,8 @@ namespace GraveRobber
 
         private static void StartQuestionProcessor()
         {
-            qProcessor = new QuestionProcessor(seLogin);
+            var cr = new ConfigReader();
+            qProcessor = new QuestionProcessor(seLogin, cr.DataFilesDir);
             qProcessor.SeriousDamnHappened = ex => Console.WriteLine(ex);
         }
 

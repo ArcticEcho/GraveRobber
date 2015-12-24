@@ -87,17 +87,29 @@ namespace GraveRobber
         }
 
         /// <summary>
+        /// The directory containing the data files which hold
+        /// information about the posts being watched.
+        /// </summary>
+        public string DataFilesDir
+        {
+            get
+            {
+                return GetSetting("DATA_FILES_DIR", "DataFilesDir");
+            }
+        }
+
+        /// <summary>
         /// Attempts to find the config value based on the given key names.
         /// The first check will be at environment variables.
         /// The second check will be at the static settings file.
         /// If the value cannot be found in either location, a null value will be returned.
         /// </summary>
-        /// <param name="enviornmentVariableName">The expected name of the enviornment variable.</param>
+        /// <param name="enviornmentVariableName">The expected name of the environment variable.</param>
         /// <param name="settingName">The expected name of the config value in the settings file.</param>
         /// <returns></returns>
         private string GetSetting(string enviornmentVariableName, string settingName)
         {
-            //first, check if the value exists in an enviornment variable (for docker)
+            //first, check if the value exists in an environment variable (for docker)
             var envValue = Environment.GetEnvironmentVariable(enviornmentVariableName);
 
             if (!string.IsNullOrWhiteSpace(envValue))
