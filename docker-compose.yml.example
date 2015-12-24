@@ -1,4 +1,12 @@
 
+
+graverobber_data:
+  image: socvr/graverobber
+  volumes:
+    - /srv/graverobber/posts-pending-review.txt
+    - /srv/graverobber/watched-posts.txt
+  entrypoint: /bin/true
+
 graverobber:
   # replace image with actual compiled name
   image: socvr/graverobber
@@ -9,6 +17,8 @@ graverobber:
     - STACK_EXCHANGE_PASSWORD_SECONDARY=<data polling account password>
     - CHAT_ROOM_URL=<chat room url>
     - DATA_FILES_DIR=<path to dir>
+  volumes_from:
+    - graverobber_data
   
 # The primrary account must have +20 reputation; the secondary account must
 # have +1000 reputation (this is not necessary for core functionality, so
