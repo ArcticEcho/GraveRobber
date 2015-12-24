@@ -45,6 +45,7 @@ namespace GraveRobber
 
         public static void Main(string[] args)
         {
+            Console.WriteLine($"Running at: {Assembly.GetExecutingAssembly().Location}\n");
             Console.Title = $"GraveRobber {currentVer}";
             Console.CancelKeyPress += (o, oo) =>
             {

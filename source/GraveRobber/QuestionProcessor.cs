@@ -60,7 +60,7 @@ namespace GraveRobber
             var wpPath = "watched-posts.txt";
             var pprPath = "posts-pending-review.txt";
 
-            if (!string.IsNullOrWhiteSpace(dataFilesDir))
+            if (!string.IsNullOrWhiteSpace(dataFilesDir) && Directory.Exists(dataFilesDir))
             {
                 wpPath = Path.Combine(dataFilesDir, wpPath);
                 pprPath = Path.Combine(dataFilesDir, pprPath);
