@@ -125,7 +125,7 @@ namespace GraveRobber
                     if (dispose) return;
 
                     var id = -1;
-                    var trimmed = TrimUrl(q.Url, out id);
+                    TrimUrl(q.Url, out id);
 
                     try
                     {
