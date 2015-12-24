@@ -26,7 +26,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using ChatExchangeDotNet;
 
 namespace GraveRobber
@@ -37,12 +36,10 @@ namespace GraveRobber
         private static readonly ManualResetEvent shutdownMre = new ManualResetEvent(false);
         private static readonly MessageFetcher messageFetcher = new MessageFetcher();
         private static readonly SELogin seLogin = new SELogin();
-        private static readonly object lockObj = new object();
         private static QuestionProcessor qProcessor;
         private static Client chatClient;
         private static Room mainRoom;
         private static Room watchingRoom;
-        private static bool capReached;
 
 
 
@@ -126,19 +123,6 @@ namespace GraveRobber
             watchingRoom.InitialisePrimaryContentOnly = true;
             watchingRoom.EventManager.ConnectListener(EventType.MessageMovedIn, new Action<Message>(m =>
             {
-                lock (lockObj)
-                {
-                    if (qProcessor.WatchedPosts > 3600 && !capReached)
-                    {
-                        capReached = true;
-                        mainRoom.PostMessageFast("I have reached my maximum post capacity of 3,600. " +
-                            "This means @Sam hasn't gotten round to switching my internal post monitoring " +
-                            "method from aggressive polling, to monitoring websockets. Therefore, I can't " +
-                            "watch anymore posts until some are removed.");
-                        return;
-                    }
-                }
-
                 var url = messageFetcher.GetPostUrl(m);
 
                 if (!String.IsNullOrWhiteSpace(url))
@@ -180,8 +164,9 @@ namespace GraveRobber
             else if (cmd == "COMMANDS")
             {
                 mainRoom.PostMessageFast("    commands ~~~~~~~~~~~~~ Prints this beautifully formatted message.\n" +
-                                         "    stats ~~~~~~~~~~~~~~~~ Prints the number of posts being watched, and closed and edited.\n" +
+                                         "    stats ~~~~~~~~~~~~~~~~ Displays the number of posts being watched, and closed and edited.\n" +
                                          "    check grave <number> ~ Posts a list of edited closed posts (default of ten, unless specified).\n" +
+                                         "    help ~~~~~~~~~~~~~~~~~ Pretty self-explanatory...\n" +
                                          "    die ~~~~~~~~~~~~~~~~~~ I die a slow and painful death.");
             }
             else if (cmd == "STATS")

@@ -22,8 +22,8 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using static GraveRobber.QuestionChecker;
@@ -32,10 +32,12 @@ namespace GraveRobber
 {
     public class QuestionProcessor : IDisposable
     {
-        private ConcurrentDictionary<string, QuestionWatcher> watchers;
-        private ConcurrentQueue<string> queuedUrls;
-        private Logger<QueuedQuestion> watchedPosts;
-        private SELogin seLogin;
+        private readonly ManualResetEvent grimReaperMre;
+        private readonly ConcurrentDictionary<string, QuestionWatcher> watchers;
+        private readonly ConcurrentQueue<string> queuedUrls;
+        private readonly Logger<QueuedQuestion> watchedPosts;
+        private readonly SELogin seLogin;
+        private readonly WebClient wc;
         private bool dispose;
 
         public int WatchedPosts => watchers?.Count ?? 0;
@@ -46,40 +48,24 @@ namespace GraveRobber
 
 
 
-        public QuestionProcessor(SELogin seLogin)
+        public QuestionProcessor(SELogin login)
         {
-            this.seLogin = seLogin;
+            seLogin = login;
+            wc = new WebClient();
             watchers = new ConcurrentDictionary<string, QuestionWatcher>();
             queuedUrls = new ConcurrentQueue<string>();
+            grimReaperMre = new ManualResetEvent(false);
 
             // Queued posts to check back on later.
-            watchedPosts = new Logger<QueuedQuestion>("watched-posts.txt", TimeSpan.FromHours(2));
+            watchedPosts = new Logger<QueuedQuestion>("watched-posts.txt");
             Task.Run(() =>
             {
                 foreach (var q in watchedPosts)
                 {
-                    var id = -1;
-                    TrimUrl(q.Url, out id);
-
-                    watchers[q.Url] = new QuestionWatcher(id)
-                    {
-                        OnException = ohNoItDidnt =>
-                        {
-                            if (SeriousDamnHappened != null)
-                            {
-                                SeriousDamnHappened(ohNoItDidnt);
-                            }
-                        },
-                        QuestionEdited = () =>
-                        {
-                            var qs = GetQuestionStatus(q.Url, seLogin);
-
-                            if (QSMatchesCriteria(qs))
-                            {
-                                HandleEditedQuestion(qs);
-                            }
-                        }
-                    };
+                    var qs = GetQuestionStatus(q.Url, seLogin);
+                    var url = "";
+                    var qw = CreateWatcher(qs, out url);
+                    watchers[url] = qw;
 
                     Thread.Sleep(2000);
                 }
@@ -89,6 +75,7 @@ namespace GraveRobber
             PostsPendingReview = new Logger<QuestionStatus>("posts-pending-review.txt");
 
             Task.Run(() => ProcessNewUrlsQueue());
+            Task.Run(() => GrimReaper());
         }
 
         ~QuestionProcessor()
@@ -113,6 +100,8 @@ namespace GraveRobber
             if (dispose) return;
             dispose = true;
 
+            grimReaperMre.Set();
+
             foreach (var w in watchers.Values)
             {
                 w.Dispose();
@@ -126,6 +115,29 @@ namespace GraveRobber
 
 
 
+        private void GrimReaper()
+        {
+            while (!dispose)
+            {
+                foreach (var q in watchedPosts)
+                {
+                    grimReaperMre.WaitOne(TimeSpan.FromSeconds(15));
+                    if (dispose) return;
+
+                    var id = -1;
+                    var trimmed = TrimUrl(q.Url, out id);
+
+                    try
+                    {
+                        wc.DownloadString($"http://stackoverflow.com/posts/ajax-load-realtime/{id}");
+                    }
+                    catch // Something bad happened, that's all we need to know.
+                    {
+                        watchedPosts.RemoveItem(q);
+                    }
+                }
+            }
+        }
 
         private void ProcessNewUrlsQueue()
         {
@@ -135,10 +147,7 @@ namespace GraveRobber
             {
                 Thread.Sleep(2000);
 
-                if (dispose || queuedUrls.Count == 0)
-                {
-                    continue;
-                }
+                if (dispose || queuedUrls.Count == 0) continue;
 
                 queuedUrls.TryDequeue(out url);
                 var id = -1;
@@ -157,7 +166,7 @@ namespace GraveRobber
 
                 if (QSMatchesCriteria(qs))
                 {
-                    HandleEditedQuestion(qs, false);
+                    HandleEditedQuestion(qs);
                 }
                 else
                 {
@@ -166,53 +175,54 @@ namespace GraveRobber
                         Url = trimmed,
                         CloseDate = (DateTime)qs?.CloseDate
                     });
-                    watchers[trimmed] = new QuestionWatcher(id)
-                    {
-                        OnException = ex =>
-                        {
-                            if (SeriousDamnHappened != null)
-                            {
-                                SeriousDamnHappened(ex);
-                            }
-                        },
-                        QuestionEdited = () =>
-                        {
-                            var status = GetQuestionStatus(trimmed, seLogin);
-
-                            if (QSMatchesCriteria(status))
-                            {
-                                HandleEditedQuestion(qs);
-                            }
-                        }
-                    };
+                    watchers[trimmed] = CreateWatcher(qs, out trimmed);
                 }
             }
         }
 
-        //private bool? CheckPost(QueuedQuestion post)
-        //{
-        //    if ((DateTime.UtcNow - post.CloseDate).TotalDays < 1 || dispose) return false;
+        private QuestionWatcher CreateWatcher(QuestionStatus qs, out string trimmedUrl)
+        {
+            var id = -1;
+            var trimmed = TrimUrl(qs.Url, out id);
+            trimmedUrl = trimmed;
 
-        //    var status = GetQuestionStatus(post.Url, seLogin);
-        //    var res = false;
+            return new QuestionWatcher(id)
+            {
+                OnException = ex =>
+                {
+                    if (SeriousDamnHappened != null)
+                    {
+                        SeriousDamnHappened(ex);
+                    }
+                },
+                QuestionEdited = () =>
+                {
+                    var status = GetQuestionStatus(trimmed, seLogin);
 
-        //    if (QSMatchesCriteria(status))
-        //    {
-        //        PostsPendingReview.EnqueueItem(status);
-        //        res = true;
-        //    }
-        //    if (status?.CloseDate != null)
-        //    {
-        //        // Keep the post as it hasn't been reopened or deleted.
-        //        return false;
-        //    }
+                    if (QSMatchesCriteria(status))
+                    {
+                        HandleEditedQuestion(qs);
+                    }
+                }
+            };
+        }
 
-        //    QuestionWatcher temp;
-        //    watchedPosts.RemoveItem(post);
-        //    watchers.TryRemove(post.Url, out temp);
+        private void HandleEditedQuestion(QuestionStatus qs)
+        {
+            PostsPendingReview.EnqueueItem(qs);
 
-        //    return res;
-        //}
+            if (watchedPosts.Any(qq => qq.Url == qs.Url))
+            {
+                watchedPosts.RemoveItem(watchedPosts.First(qq => qq.Url == qs.Url));
+            }
+
+            if (watchers.ContainsKey(qs.Url))
+            {
+                QuestionWatcher w;
+                watchers.TryRemove(qs.Url, out w);
+                w.Dispose();
+            }
+        }
 
         private bool QSMatchesCriteria(QuestionStatus qs) =>
             qs.CloseDate != null &&
@@ -220,17 +230,5 @@ namespace GraveRobber
             qs.EditedSinceClosure &&
             qs.Difference > 0.3 &&
             PostsPendingReview.All(x => x.Url != qs.Url);
-
-        private void HandleEditedQuestion(QuestionStatus qs, bool removeWatchedQQ = true)
-        {
-            PostsPendingReview.EnqueueItem(qs);
-
-            if (removeWatchedQQ)
-            {
-                QuestionWatcher temp;
-                watchedPosts.RemoveItem(watchedPosts.First(qq => qq.Url == qs.Url));
-                watchers.TryRemove(qs.Url, out temp);
-            }
-        }
     }
 }

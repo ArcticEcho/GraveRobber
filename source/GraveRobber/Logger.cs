@@ -85,21 +85,22 @@ namespace GraveRobber
 
         public IEnumerator<T> GetEnumerator()
         {
+            IEnumerable<string> lines;
             lock (lockObj)
             {
-                var lines = File.ReadLines(logPath);
+                 lines = File.ReadLines(logPath);
+            }
 
-                foreach (var line in lines)
-                {
-                    if (string.IsNullOrWhiteSpace(line)) continue;
+            foreach (var line in lines)
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
 
-                    var entry = JsonSerializer.DeserializeFromString<Entry>(line);
-                    var data = (T)entry.Data;
+                var entry = JsonSerializer.DeserializeFromString<Entry>(line);
+                var data = (T)entry.Data;
 
-                    if (removeItemsQueue.Contains(data)) continue;
+                if (removeItemsQueue.Contains(data)) continue;
 
-                    yield return data;
-                }
+                yield return data;
             }
         }
 
