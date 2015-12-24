@@ -175,9 +175,9 @@ namespace GraveRobber
                         },
                         QuestionEdited = () =>
                         {
-                            var qs = GetQuestionStatus(trimmed, seLogin);
+                            var status = GetQuestionStatus(trimmed, seLogin);
 
-                            if (QSMatchesCriteria(qs))
+                            if (QSMatchesCriteria(status))
                             {
                                 HandleEditedQuestion(qs);
                             }
