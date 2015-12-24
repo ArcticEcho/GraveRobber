@@ -47,7 +47,7 @@ namespace GraveRobber
 
         public static QuestionStatus GetQuestionStatus(string url, SELogin seLogin)
         {
-            if (String.IsNullOrWhiteSpace(url) || !postIDRegex.IsMatch(url)) return null;
+            if (string.IsNullOrWhiteSpace(url) || !postIDRegex.IsMatch(url)) return null;
 
             var revs = GetRevisionsHtml(url);
 

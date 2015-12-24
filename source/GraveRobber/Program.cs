@@ -67,16 +67,6 @@ namespace GraveRobber
             Console.WriteLine("done.\nGraveRobber started.");
 #endif
 
-            //var ms = messageFetcher.GetRecentMessage(mainRoom, 500);
-
-            //foreach (var m in ms.Values)
-            //{
-            //    if (!string.IsNullOrWhiteSpace(m))
-            //    {
-            //        qProcessor.WatchPost(m);
-            //    }
-            //}
-
             shutdownMre.WaitOne();
 
             Console.Write("Stopping...");
@@ -126,7 +116,7 @@ namespace GraveRobber
             {
                 var url = messageFetcher.GetPostUrl(m);
 
-                if (!String.IsNullOrWhiteSpace(url))
+                if (!string.IsNullOrWhiteSpace(url))
                 {
                     qProcessor.WatchPost(url);
                 }
@@ -145,6 +135,23 @@ namespace GraveRobber
             {
                 mainRoom.PostMessageFast("Bye.");
                 shutdownMre.Set();
+            }
+            else if (cmd == "REFILL" && (msg.Author.IsRoomOwner ||
+                     msg.Author.IsMod || msg.Author.ID == 2246344))
+            {
+                mainRoom.PostReplyFast(msg, "Now fetching and parsing the 500 latest messages from the graveyard...");
+
+                var ms = messageFetcher.GetRecentMessage(mainRoom, 500);
+
+                foreach (var m in ms.Values)
+                {
+                    if (!string.IsNullOrWhiteSpace(m))
+                    {
+                        qProcessor.WatchPost(m);
+                    }
+                }
+
+                mainRoom.PostReplyFast(msg, "Done.");
             }
             else if (cmd.StartsWith("CHECK GRAVE") && (msg.Author.IsRoomOwner ||
                      msg.Author.Reputation > 3000))
