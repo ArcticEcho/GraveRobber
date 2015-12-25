@@ -37,7 +37,7 @@ namespace GraveRobber
     /// </summary>
     public partial class Logger<T> : IEnumerable<T>, IDisposable
     {
-        private static readonly ConcurrentDictionary<int, Entry> data = new ConcurrentDictionary<int, Entry>();
+        private readonly ConcurrentDictionary<int, Entry> data = new ConcurrentDictionary<int, Entry>();
         private readonly ManualResetEvent flushMre = new ManualResetEvent(false);
         private readonly ManualResetEvent disposeMre = new ManualResetEvent(false);
         private readonly object lockObj = new object();
@@ -46,7 +46,7 @@ namespace GraveRobber
 
         public TimeSpan FlushRate { get; }
 
-        public int Count { get; } = data.Count;
+        public int Count => data.Count;
 
         internal Action LogFlushed { get; set; }
 
