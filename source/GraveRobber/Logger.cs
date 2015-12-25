@@ -54,6 +54,8 @@ namespace GraveRobber
 
         public Logger(string logFileName, TimeSpan? flushRate = null)
         {
+            File.Delete(logFileName);
+
             FlushRate = flushRate ?? TimeSpan.FromMinutes(60);
             logPath = logFileName;
 
@@ -144,7 +146,7 @@ namespace GraveRobber
 
                 var temp = Path.GetTempFileName();
 
-                foreach (var entry in data)
+                foreach (var entry in data.Values)
                 {
                     var line = JsonSerializer.SerializeToString(entry);
 
