@@ -78,7 +78,7 @@ namespace GraveRobber
                     var qw = CreateWatcher(qs, out url);
                     watchers[url] = qw;
 
-                    Thread.Sleep(2000);
+                    Thread.Sleep(3000);
                 }
             });
 
@@ -170,7 +170,7 @@ namespace GraveRobber
             {
                 try
                 {
-                    Thread.Sleep(2000);
+                    Thread.Sleep(3000);
 
                     if (dispose || queuedUrls.Count == 0) continue;
 
