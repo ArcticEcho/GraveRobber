@@ -100,10 +100,6 @@ namespace GraveRobber
                 {
                     QuestionEdited();
                 }
-                else
-                {
-                    Console.WriteLine($"-----\nThis message no like me:\n{msg}\n-----");
-                }
             }
             catch (Exception ex)
             {

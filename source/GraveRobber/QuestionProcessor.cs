@@ -86,7 +86,7 @@ namespace GraveRobber
             PostsPendingReview = new Logger<QuestionStatus>(pprPath);
 
             Task.Run(() => ProcessNewUrlsQueue());
-            //Task.Run(() => GrimReaper()); Disable this just for now. Until I can figure out a better way to remove dead posts.
+            Task.Run(() => GrimReaper());
         }
 
         ~QuestionProcessor()
@@ -115,7 +115,7 @@ namespace GraveRobber
 
             foreach (var w in watchers.Values)
             {
-                w.Dispose();
+                Task.Run(() =>w.Dispose());
             }
 
             wc.Dispose();
@@ -131,10 +131,13 @@ namespace GraveRobber
         private void GrimReaper()
         {
             var qqsToRemove = new HashSet<QueuedQuestion>();
+            var postsCpy = new HashSet<QueuedQuestion>();
 
             while (!dispose)
             {
-                foreach (var q in watchedPosts)
+                postsCpy = new HashSet<QueuedQuestion>(watchedPosts);
+
+                foreach (var q in postsCpy)
                 {
                     grimReaperMre.WaitOne(TimeSpan.FromSeconds(15));
                     if (dispose) break;

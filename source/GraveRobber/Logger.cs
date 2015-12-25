@@ -22,8 +22,10 @@
 
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ServiceStack.Text;
@@ -35,19 +37,18 @@ namespace GraveRobber
     /// </summary>
     public partial class Logger<T> : IEnumerable<T>, IDisposable
     {
-        private readonly ManualResetEvent itemRemoverMre = new ManualResetEvent(false);
-        private readonly HashSet<T> removeItemsQueue = new HashSet<T>();
+        private static readonly ConcurrentDictionary<int, Entry> data = new ConcurrentDictionary<int, Entry>();
+        private readonly ManualResetEvent flushMre = new ManualResetEvent(false);
+        private readonly ManualResetEvent disposeMre = new ManualResetEvent(false);
         private readonly object lockObj = new object();
         private readonly string logPath;
         private bool dispose;
 
         public TimeSpan FlushRate { get; }
 
-        public int Count { get; private set; }
+        public int Count { get; } = data.Count;
 
-        public Action<T> ItemRemovedEvent { get; set; }
-
-        internal Action CollectionCheckedEvent { get; set; }
+        internal Action LogFlushed { get; set; }
 
 
 
@@ -60,8 +61,16 @@ namespace GraveRobber
             {
                 File.Create(logFileName).Dispose();
             }
+            else
+            {
+                var lines = File.ReadLines(logFileName);
+                foreach (var line in lines)
+                {
+                    var entry = JsonSerializer.DeserializeFromString<Entry>(line);
 
-            InitialiseCount();
+                    data[entry.Data.GetHashCode()] = entry;
+                }
+            }
 
             Task.Run(() => RemoveItems());
         }
@@ -78,80 +87,42 @@ namespace GraveRobber
             if (dispose) return;
             dispose = true;
 
-            itemRemoverMre.Set();
+            flushMre?.Set();
+            disposeMre?.WaitOne();
+            flushMre?.Dispose();
+            disposeMre?.Dispose();
 
             GC.SuppressFinalize(this);
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            lock (lockObj)
+            foreach (var entry in data.Values)
             {
-                var lines = File.ReadLines(logPath);
-
-                foreach (var line in lines)
-                {
-                    if (string.IsNullOrWhiteSpace(line)) continue;
-
-                    var entry = JsonSerializer.DeserializeFromString<Entry>(line);
-                    var data = (T)entry.Data;
-
-                    if (removeItemsQueue.Contains(data)) continue;
-
-                    yield return data;
-                }
+                yield return (T)entry.Data;
             }
         }
 
         public void EnqueueItem(T item)
         {
+            if (item == null) throw new ArgumentNullException("item");
+            if (dispose) throw new ObjectDisposedException(GetType().Name);
+
             var entry = new Entry
             {
                 Data = item,
                 Timestamp = DateTime.UtcNow
             };
-            var json = JsonSerializer.SerializeToString(entry);
 
-            lock (lockObj)
-            {
-                File.AppendAllLines(logPath, new[] { json });
-
-                Count++;
-            }
-        }
-
-        public void EnqueueItems(IEnumerable<T> items)
-        {
-            lock (lockObj)
-            {
-                foreach (var item in items)
-                {
-                    var entry = new Entry
-                    {
-                        Data = item,
-                        Timestamp = DateTime.UtcNow
-                    };
-                    var json = JsonSerializer.SerializeToString(entry);
-
-                    File.AppendAllLines(logPath, new[] { json });
-
-                    Count++;
-                }
-            }
+            data[entry.Data.GetHashCode()] = entry;
         }
 
         public void RemoveItem(T item)
         {
-            if (removeItemsQueue.Contains(item))
-            {
-                throw new ArgumentException("This item is already queued for removal.", "item");
-            }
+            if (item == null) throw new ArgumentNullException("item");
 
-            lock (lockObj)
-            {
-                removeItemsQueue.Add(item);
-                Count--;
-            }
+            Entry temp;
+            data.TryRemove(item.GetHashCode(), out temp);
         }
 
         public void ClearLog()
@@ -159,73 +130,40 @@ namespace GraveRobber
             lock (lockObj)
             {
                 File.WriteAllText(logPath, "");
-                removeItemsQueue.Clear();
-                Count = 0;
+                data.Clear();
             }
         }
 
 
-
-        private void InitialiseCount()
-        {
-            if (!File.Exists(logPath))
-            {
-                File.Create(logPath).Dispose();
-            }
-            else
-            {
-                lock (lockObj)
-                {
-                    var lines = File.ReadLines(logPath);
-
-                    foreach (var line in lines)
-                    {
-                        if (!string.IsNullOrWhiteSpace(line)) Count++;
-                    }
-                }
-            }
-        }
 
         private void RemoveItems()
         {
             while (!dispose)
             {
-                itemRemoverMre.WaitOne(FlushRate);
+                flushMre.WaitOne(FlushRate);
 
-                if (removeItemsQueue.Count > 0)
+                var temp = Path.GetTempFileName();
+
+                foreach (var entry in data)
                 {
-                    lock (lockObj)
-                    {
-                        var lines = File.ReadLines(logPath);
-                        var temp = Path.GetTempFileName();
+                    var line = JsonSerializer.SerializeToString(entry);
 
-                        foreach (var line in lines)
-                        {
-                            if (string.IsNullOrWhiteSpace(line)) continue;
-
-                            var entry = JsonSerializer.DeserializeFromString<Entry>(line);
-                            var data = (T)entry.Data;
-
-                            if (!removeItemsQueue.Contains(data))
-                            {
-                                File.AppendAllLines(temp, new[] { line });
-                            }
-                            else
-                            {
-                                removeItemsQueue.Remove(data);
-                            }
-                        }
-
-                        File.Delete(logPath);
-                        File.Move(temp, logPath);
-                    }
+                    File.AppendAllLines(temp, new[] { line });
                 }
 
-                if (CollectionCheckedEvent != null)
+                lock (lockObj)
                 {
-                    Task.Run(CollectionCheckedEvent);
+                    File.Delete(logPath);
+                    File.Move(temp, logPath);
+                }
+
+                if (LogFlushed != null)
+                {
+                    Task.Run(LogFlushed);
                 }
             }
+
+            disposeMre.Set();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

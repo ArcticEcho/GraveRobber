@@ -68,11 +68,12 @@ namespace GraveRobber
 #endif
 
             shutdownMre.WaitOne();
+            shutdownMre?.Dispose();
 
             Console.Write("Stopping...");
 
             mainRoom?.Leave();
-            shutdownMre?.Dispose();
+            watchingRoom?.Leave();
             chatClient?.Dispose();
             qProcessor?.Dispose();
 
