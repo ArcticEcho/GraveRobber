@@ -54,8 +54,6 @@ namespace GraveRobber
 
         public Logger(string logFileName, TimeSpan? flushRate = null)
         {
-            File.Delete(logFileName);
-
             FlushRate = flushRate ?? TimeSpan.FromMinutes(60);
             logPath = logFileName;
 
