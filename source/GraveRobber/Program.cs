@@ -216,7 +216,7 @@ namespace GraveRobber
 
                 foreach (var post in qProcessor.PostsPendingReview.OrderByDescending(x => x.Difference))
                 {
-                    if (posts.Count > postCount) break;
+                    if (posts.Count >= postCount) break;
 
                     posts.Add(post);
                     chatMsg.AppendText($"{Math.Round(post.Difference * 100)}% changed, ");
