@@ -92,16 +92,22 @@ namespace GraveRobber
             try
             {
                 var outter = JsonSerializer.DeserializeFromString<Dictionary<string, object>>(msg);
-                var inner = DynamicJson.Deserialize((string)outter["data"]);
+                var inner = JsonSerializer.DeserializeFromString<Dictionary<string, object>>((string)outter["data"]);
 
-                if (inner.a == "post-edit" && inner.id == ID.ToString() && QuestionEdited != null)
+                if (inner.ContainsKey("a") && inner.ContainsKey("id") &&
+                    (string)inner["a"] == "post-edit" && (string)inner["id"] == ID.ToString() &&
+                    QuestionEdited != null)
                 {
                     QuestionEdited();
+                }
+                else
+                {
+                    Console.WriteLine($"-----\nThis message no like me:\n{msg}\n-----");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine($"-----\nAHHH NO!!! I FOUND AN EXCEPTION!!!\n{ex}\nMESSAGE\n{msg}\n------");
             }
         }
     }
