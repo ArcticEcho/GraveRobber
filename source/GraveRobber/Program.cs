@@ -109,10 +109,12 @@ namespace GraveRobber
 
             mainRoom = chatClient.JoinRoom(cr.RoomUrl);
             mainRoom.InitialisePrimaryContentOnly = true;
+            mainRoom.AggressiveWebSocketRecovery = true;
             mainRoom.EventManager.ConnectListener(EventType.UserMentioned, new Action<Message>(HandleCommand));
 
             watchingRoom = chatClient.JoinRoom("http://chat.stackoverflow.com/rooms/90230/cv-request-graveyard");//("http://chat.stackoverflow.com/rooms/68414/socvr-testing-facility");//
             watchingRoom.InitialisePrimaryContentOnly = true;
+            watchingRoom.AggressiveWebSocketRecovery = true;
             watchingRoom.EventManager.ConnectListener(EventType.MessageMovedIn, new Action<Message>(m =>
             {
                 var url = messageFetcher.GetPostUrl(m);
