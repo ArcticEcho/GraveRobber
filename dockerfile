@@ -33,7 +33,7 @@ COPY source/ /tmp/source/
 RUN \
   nuget restore /tmp/source/GraveRobber.sln && \
   xbuild /p:Configuration=Release /tmp/source/GraveRobber.sln && \
-  mkdir -p /srv/graverobber && \
+  mkdir -p /srv/graverobber/config && \
   cp /tmp/source/GraveRobber/bin/Release/* /srv/graverobber/
   
 CMD ["mono", "/srv/graverobber/GraveRobber.exe"]
