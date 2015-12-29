@@ -99,6 +99,17 @@ namespace GraveRobber
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        public string ReviewReminderPeriod
+        {
+            get
+            {
+                return GetSetting("REVIEW_REMINDER_MINS", "ReviewReminderMins");
+            }
+        }
+
+        /// <summary>
         /// Attempts to find the config value based on the given key names.
         /// The first check will be at environment variables.
         /// The second check will be at the static settings file.
@@ -106,10 +117,10 @@ namespace GraveRobber
         /// </summary>
         /// <param name="enviornmentVariableName">The expected name of the environment variable.</param>
         /// <param name="settingName">The expected name of the config value in the settings file.</param>
-        /// <returns></returns>
+        /// <returns>Magical data if successful, otherwise null.</returns>
         private string GetSetting(string enviornmentVariableName, string settingName)
         {
-            //first, check if the value exists in an environment variable (for docker)
+            // First, check if the value exists in an environment variable (for docker).
             var envValue = Environment.GetEnvironmentVariable(enviornmentVariableName);
 
             if (!string.IsNullOrWhiteSpace(envValue))
@@ -117,12 +128,12 @@ namespace GraveRobber
                 return envValue;
             }
 
-            //else, check the config file
+            // Else, check the config file.
 
-            //does the settings.txt file exist?
+            // Does the settings.txt file exist?
             if (!File.Exists("settings.txt"))
             {
-                //file does not exist, return null now
+                // File does not exist, return null for now.
                 return null;
             }
 
@@ -137,7 +148,7 @@ namespace GraveRobber
                 }
             }
 
-            //it's not in the config file, return null.
+            // It's not in the config file, return null.
             return null;
         }
     }

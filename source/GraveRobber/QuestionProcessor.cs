@@ -46,6 +46,8 @@ namespace GraveRobber
 
         public Logger<QuestionStatus> PostsPendingReview { get; }
 
+        public Action<int> NewPostsPendingReview { get; set; }
+
         public Action<Exception> SeriousDamnHappened { get; set; }
 
 
@@ -252,10 +254,15 @@ namespace GraveRobber
                 watchers.TryRemove(qs.Url, out w);
                 w.Dispose();
             }
+
+            if (NewPostsPendingReview != null)
+            {
+                NewPostsPendingReview(PostsPendingReview.Count);
+            }
         }
 
         private bool QSMatchesCriteria(QuestionStatus qs) =>
-            qs.CloseDate != null &&
+            qs?.CloseDate != null &&
             (DateTime.UtcNow - qs.CloseDate.Value).TotalDays > 1 &&
             qs.EditedSinceClosure &&
             qs.Difference > 0.3 &&

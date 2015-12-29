@@ -40,6 +40,7 @@ namespace GraveRobber
         private static Client chatClient;
         private static Room mainRoom;
         private static Room watchingRoom;
+        private static DateTime lastPprMsgPost = DateTime.MinValue;
 
 
 
@@ -101,6 +102,13 @@ namespace GraveRobber
             var cr = new ConfigReader();
             qProcessor = new QuestionProcessor(seLogin, cr.DataFilesDir);
             qProcessor.SeriousDamnHappened = ex => Console.WriteLine(ex);
+            qProcessor.NewPostsPendingReview = revCount =>
+            {
+                if (revCount < 10 || (DateTime.UtcNow - lastPprMsgPost).TotalMinutes < 60) return;
+
+                lastPprMsgPost = DateTime.UtcNow;
+                mainRoom.PostMessageFast($"There are now {revCount} posts pending review.");
+            };
         }
 
         private static void JoinRooms()
