@@ -137,6 +137,8 @@ namespace GraveRobber
                         latestRevI = -1;
                     }
                 }
+
+                if (closeIndex != -1 && latestRevI != -1) break;
             }
 
             for (var i = closeIndex; i < revs.Count; i++)

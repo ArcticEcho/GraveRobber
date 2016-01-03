@@ -100,11 +100,15 @@ namespace GraveRobber
         private static void StartQuestionProcessor()
         {
             var cr = new ConfigReader();
+            var minsStr = cr.ReviewReminderPeriod;
+            var mins = string.IsNullOrWhiteSpace(minsStr) ? 
+                60 :
+                int.Parse(new string(minsStr.Where(char.IsDigit).ToArray()));
             qProcessor = new QuestionProcessor(seLogin, cr.DataFilesDir);
             qProcessor.SeriousDamnHappened = ex => Console.WriteLine(ex);
             qProcessor.NewPostsPendingReview = revCount =>
             {
-                if (revCount < 10 || (DateTime.UtcNow - lastPprMsgPost).TotalMinutes < 60) return;
+                if (revCount < 5 || (DateTime.UtcNow - lastPprMsgPost).TotalMinutes < mins) return;
 
                 lastPprMsgPost = DateTime.UtcNow;
                 mainRoom.PostMessageFast($"There are now {revCount} posts pending review.");
@@ -167,7 +171,7 @@ namespace GraveRobber
             else if (cmd.StartsWith("CHECK GRAVE") && (msg.Author.IsRoomOwner ||
                      msg.Author.Reputation > 3000))
             {
-                var postCount = 10;
+                var postCount = 5;
 
                 if (cmd.Any(char.IsDigit))
                 {
@@ -184,7 +188,7 @@ namespace GraveRobber
             {
                 mainRoom.PostMessageFast("    commands ~~~~~~~~~~~~~ Prints this beautifully formatted message.\n" +
                                          "    stats ~~~~~~~~~~~~~~~~ Displays the number of posts being watched, and closed and edited.\n" +
-                                         "    check grave <number> ~ Posts a list of edited closed posts (default of ten, unless specified).\n" +
+                                         "    check grave <number> ~ Posts a list of edited closed posts (default of 5, unless specified).\n" +
                                          "    help ~~~~~~~~~~~~~~~~~ Pretty self-explanatory...\n" +
                                          "    die ~~~~~~~~~~~~~~~~~~ I die a slow and painful death.");
             }
