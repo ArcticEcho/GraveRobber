@@ -75,12 +75,15 @@ namespace GraveRobber
             {
                 foreach (var q in watchedPosts)
                 {
+                    Thread.Sleep(5000);
+
                     var qs = GetQuestionStatus(q.Url, seLogin);
+
+                    if (qs == null) continue;
+
                     var url = "";
                     var qw = CreateWatcher(qs, out url);
                     watchers[url] = qw;
-
-                    Thread.Sleep(3000);
                 }
             });
 
@@ -172,7 +175,7 @@ namespace GraveRobber
             {
                 try
                 {
-                    Thread.Sleep(3000);
+                    Thread.Sleep(5000);
 
                     if (dispose || queuedUrls.Count == 0) continue;
 

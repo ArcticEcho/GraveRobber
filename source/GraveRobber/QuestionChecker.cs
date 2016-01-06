@@ -116,16 +116,17 @@ namespace GraveRobber
 
         private static float CalcDiff(List<KeyValuePair<string, string>> revs)
         {
-            var closeIndex = 0;
+            var closeIndex = -1;
             var revIdBeforeClose = -1;
             var latestRevI = -1;
+
             for (var i = 0; i < revs.Count; i++)
             {
-                if (closedRegex.IsMatch(revs[i].Value))
+                if (closedRegex.IsMatch(revs[i].Value) && closeIndex == -1)
                 {
                     closeIndex = i;
                 }
-                if (latestRevI == -1 && revIDRegex.IsMatch(revs[i].Value))
+                if (revIDRegex.IsMatch(revs[i].Value) && latestRevI == -1)
                 {
                     try
                     {
@@ -141,7 +142,7 @@ namespace GraveRobber
                 if (closeIndex != -1 && latestRevI != -1) break;
             }
 
-            for (var i = closeIndex; i < revs.Count; i++)
+            for (var i = closeIndex + 1; i < revs.Count; i++)
             {
                 if (revIDRegex.IsMatch(revs[i].Value))
                 {
@@ -155,7 +156,7 @@ namespace GraveRobber
                 }
             }
 
-            if (closeIndex == 0 || latestRevI == -1 ||
+            if (closeIndex == -1 || latestRevI == -1 ||
                 revIdBeforeClose == -1 || latestRevI == revIdBeforeClose)
             {
                 return -1;

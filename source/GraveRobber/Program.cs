@@ -232,7 +232,23 @@ namespace GraveRobber
                 {
                     if (posts.Count >= postCount) break;
 
-                    posts.Add(post);
+                    if ((DateTime.UtcNow - post.StatusGenTime).TotalHours > 12)
+                    {
+                        Thread.Sleep(3000);
+                        var qs = QuestionChecker.GetQuestionStatus(post.Url, seLogin);
+
+                        if (qs == null || qs.CloseDate == null) continue;
+
+                        posts.Add(qs);
+                    }
+                    else
+                    {
+                        posts.Add(post);
+                    }
+                }
+
+                foreach (var post in posts)
+                {
                     chatMsg.AppendText($"{Math.Round(post.Difference * 100)}% changed, ");
                     chatMsg.AppendText($"score +{post.UpvoteCount}/-{Math.Abs(post.DownvoteCount)}: {post.Url}\n");
                 }

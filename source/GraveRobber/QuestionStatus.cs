@@ -38,6 +38,15 @@ namespace GraveRobber
 
         public float Difference { get; set; }
 
+        public DateTime StatusGenTime { get; set; }
+
+
+
+        public QuestionStatus()
+        {
+            StatusGenTime = DateTime.UtcNow;
+        }
+
 
 
         public override int GetHashCode()
