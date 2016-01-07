@@ -44,9 +44,7 @@ namespace GraveRobber
 
         public int WatchedPosts => watchers?.Count ?? 0;
 
-        public Logger<QuestionStatus> PostsPendingReview { get; }
-
-        public Action<int> NewPostsPendingReview { get; set; }
+        public Action<QuestionStatus> PostFound { get; set; }
 
         public Action<Exception> SeriousDamnHappened { get; set; }
 
@@ -87,9 +85,6 @@ namespace GraveRobber
                 }
             });
 
-            // Save any active posts.
-            PostsPendingReview = new Logger<QuestionStatus>(pprPath);
-
             Task.Run(() => ProcessNewUrlsQueue());
             Task.Run(() => GrimReaper());
         }
@@ -126,7 +121,6 @@ namespace GraveRobber
             wc.Dispose();
             grimReaperMre.Dispose();
             watchedPosts.Dispose();
-            PostsPendingReview.Dispose();
 
             GC.SuppressFinalize(this);
         }
@@ -183,8 +177,7 @@ namespace GraveRobber
                     var id = -1;
                     var trimmed = TrimUrl(url, out id);
 
-                    if (watchedPosts.Any(x => x.Url == trimmed) ||
-                        PostsPendingReview.Any(x => x.Url == trimmed))
+                    if (watchedPosts.Any(x => x.Url == trimmed))
                     {
                         continue;
                     }
@@ -244,8 +237,6 @@ namespace GraveRobber
 
         private void HandleEditedQuestion(QuestionStatus qs)
         {
-            PostsPendingReview.EnqueueItem(qs);
-
             if (watchedPosts.Any(qq => qq.Url == qs.Url))
             {
                 watchedPosts.RemoveItem(watchedPosts.First(qq => qq.Url == qs.Url));
@@ -258,9 +249,9 @@ namespace GraveRobber
                 w.Dispose();
             }
 
-            if (NewPostsPendingReview != null)
+            if (PostFound != null)
             {
-                NewPostsPendingReview(PostsPendingReview.Count);
+                PostFound(qs);
             }
         }
 
@@ -268,7 +259,6 @@ namespace GraveRobber
             qs?.CloseDate != null &&
             (DateTime.UtcNow - qs.CloseDate.Value).TotalDays > 1 &&
             qs.EditedSinceClosure &&
-            qs.Difference > 0.3 &&
-            PostsPendingReview.All(x => x.Url != qs.Url);
+            qs.Difference > 0.3;
     }
 }

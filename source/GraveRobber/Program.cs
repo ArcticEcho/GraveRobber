@@ -40,7 +40,6 @@ namespace GraveRobber
         private static Client chatClient;
         private static Room mainRoom;
         private static Room watchingRoom;
-        private static DateTime lastPprMsgPost = DateTime.MinValue;
 
 
 
@@ -106,12 +105,12 @@ namespace GraveRobber
                 int.Parse(new string(minsStr.Where(char.IsDigit).ToArray()));
             qProcessor = new QuestionProcessor(seLogin, cr.DataFilesDir);
             qProcessor.SeriousDamnHappened = ex => Console.WriteLine(ex);
-            qProcessor.NewPostsPendingReview = revCount =>
-            {
-                if (revCount < 5 || (DateTime.UtcNow - lastPprMsgPost).TotalMinutes < mins) return;
-
-                lastPprMsgPost = DateTime.UtcNow;
-                mainRoom.PostMessageFast($"There are now {revCount} posts pending review.");
+            qProcessor.PostFound = qs =>
+            {             //       V Zero-width char here in.
+                var msg = $"A `cv-p​ls`'ed [question]({qs.Url} " +
+                          $"\"+{qs.UpvoteCount}/-{Math.Abs(qs.DownvoteCount)}\") " +
+                          $"has been edited ({Math.Round(qs.Difference * 100)}% changed).";
+                mainRoom.PostMessageFast(msg);
             };
         }
 
@@ -168,35 +167,17 @@ namespace GraveRobber
 
                 mainRoom.PostReplyFast(msg, "Done.");
             }
-            else if (cmd.StartsWith("CHECK GRAVE") && (msg.Author.IsRoomOwner ||
-                     msg.Author.Reputation > 3000))
-            {
-                var postCount = 5;
-
-                if (cmd.Any(char.IsDigit))
-                {
-                    if (!int.TryParse(new string(cmd.Where(char.IsDigit).ToArray()), out postCount))
-                    {
-                        // Well, do nothing since we've already initialised
-                        // the field with a default value (of 10).
-                    }
-                }
-
-                CheckGrave(postCount);
-            }
             else if (cmd == "COMMANDS")
             {
                 mainRoom.PostMessageFast("    commands ~~~~~~~~~~~~~ Prints this beautifully formatted message.\n" +
-                                         "    stats ~~~~~~~~~~~~~~~~ Displays the number of posts being watched, and closed and edited.\n" +
-                                         "    check grave <number> ~ Posts a list of edited closed posts (default of 5, unless specified).\n" +
+                                         "    stats ~~~~~~~~~~~~~~~~ Displays the number of posts being watched.\n" +
                                          "    help ~~~~~~~~~~~~~~~~~ Pretty self-explanatory...\n" +
                                          "    die ~~~~~~~~~~~~~~~~~~ I die a slow and painful death.");
             }
             else if (cmd == "STATS")
             {
-                var pendingQs = qProcessor.PostsPendingReview.Count;
                 var watchingQs = qProcessor.WatchedPosts;
-                mainRoom.PostMessageFast($"Posts being watched: `{watchingQs}`. Posts pending review: `{pendingQs}`.");
+                mainRoom.PostMessageFast($"Posts being watched: `{watchingQs}`.");
             }
             else if (cmd =="HELP")
             {
@@ -216,60 +197,6 @@ namespace GraveRobber
             else if (cmd.StartsWith("CHECK GRAVE"))
             {
                 mainRoom.PostReplyFast(msg, "You need at least 3000 reputation to run this command.");
-            }
-        }
-
-        private static void CheckGrave(int postCount)
-        {
-            mainRoom.PostMessageFast("Digging up graves, one moment...");
-
-            try
-            {
-                var chatMsg = new MessageBuilder();
-                var posts = new HashSet<QuestionStatus>();
-
-                foreach (var post in qProcessor.PostsPendingReview.OrderByDescending(x => x.Difference))
-                {
-                    if (posts.Count >= postCount) break;
-
-                    if ((DateTime.UtcNow - post.StatusGenTime).TotalHours > 12)
-                    {
-                        Thread.Sleep(3000);
-                        var qs = QuestionChecker.GetQuestionStatus(post.Url, seLogin);
-
-                        if (qs == null || qs.CloseDate == null) continue;
-
-                        posts.Add(qs);
-                    }
-                    else
-                    {
-                        posts.Add(post);
-                    }
-                }
-
-                foreach (var post in posts)
-                {
-                    chatMsg.AppendText($"{Math.Round(post.Difference * 100)}% changed, ");
-                    chatMsg.AppendText($"score +{post.UpvoteCount}/-{Math.Abs(post.DownvoteCount)}: {post.Url}\n");
-                }
-
-                if (!string.IsNullOrWhiteSpace(chatMsg.ToString()))
-                {
-                    mainRoom.PostMessageFast(chatMsg);
-
-                    foreach (var post in posts)
-                    {
-                        qProcessor.PostsPendingReview.RemoveItem(post);
-                    }
-                }
-                else
-                {
-                    mainRoom.PostMessageFast("No questions found.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
             }
         }
     }
