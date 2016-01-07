@@ -99,10 +99,6 @@ namespace GraveRobber
         private static void StartQuestionProcessor()
         {
             var cr = new ConfigReader();
-            var minsStr = cr.ReviewReminderPeriod;
-            var mins = string.IsNullOrWhiteSpace(minsStr) ? 
-                60 :
-                int.Parse(new string(minsStr.Where(char.IsDigit).ToArray()));
             qProcessor = new QuestionProcessor(seLogin, cr.DataFilesDir);
             qProcessor.SeriousDamnHappened = ex => Console.WriteLine(ex);
             qProcessor.PostFound = qs =>
