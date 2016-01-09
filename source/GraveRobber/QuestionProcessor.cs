@@ -156,7 +156,7 @@ namespace GraveRobber
 
                 foreach (var q in qqsToRemove)
                 {
-                    watchedPosts.RemoveItem(q);
+                    RemoveWatchedPost(q.Url);
                 }
             }
         }
@@ -242,21 +242,26 @@ namespace GraveRobber
 
         private void HandleEditedQuestion(QuestionStatus qs)
         {
-            if (watchedPosts.Any(qq => qq.Url == qs.Url))
-            {
-                watchedPosts.RemoveItem(watchedPosts.First(qq => qq.Url == qs.Url));
-            }
-
-            if (watchers.ContainsKey(qs.Url))
-            {
-                QuestionWatcher w;
-                watchers.TryRemove(qs.Url, out w);
-                w.Dispose();
-            }
+            RemoveWatchedPost(qs.Url);
 
             if (PostFound != null)
             {
                 PostFound(qs);
+            }
+        }
+
+        private void RemoveWatchedPost(string url)
+        {
+            if (watchedPosts.Any(qq => qq.Url == url))
+            {
+                watchedPosts.RemoveItem(watchedPosts.First(qq => qq.Url == url));
+            }
+
+            if (watchers.ContainsKey(url))
+            {
+                QuestionWatcher w;
+                watchers.TryRemove(url, out w);
+                w.Dispose();
             }
         }
 
