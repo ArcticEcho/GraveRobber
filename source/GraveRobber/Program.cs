@@ -63,21 +63,21 @@ namespace GraveRobber
             Console.WriteLine("done.\nGraveRobber started (debug).");
             mainRoom.PostMessageFast($"GraveRobber started {currentVer} (debug).");
 #else
-            mainRoom.PostMessageFast($"GraveRobber started {currentVer}.");
             Console.WriteLine("done.\nGraveRobber started.");
+            mainRoom.PostMessageFast($"GraveRobber started {currentVer}.");
 #endif
 
             shutdownMre.WaitOne();
             shutdownMre?.Dispose();
 
-            Console.Write("Stopping...");
+            Console.Write("\nShutting down...");
 
             mainRoom?.Leave();
             watchingRoom?.Leave();
             chatClient?.Dispose();
             qProcessor?.Dispose();
 
-            Console.WriteLine("done.");
+            Console.WriteLine("\nShutdown complete.");
         }
 
 
@@ -149,7 +149,7 @@ namespace GraveRobber
             else if (cmd == "REFILL" && (msg.Author.IsRoomOwner ||
                      msg.Author.IsMod || msg.Author.ID == 2246344))
             {
-                mainRoom.PostReplyFast(msg, "Now fetching and parsing the 500 latest messages from the graveyard...");
+                mainRoom.PostReplyFast(msg, "Working...");
 
                 var ms = messageFetcher.GetRecentMessage(mainRoom, 500);
 

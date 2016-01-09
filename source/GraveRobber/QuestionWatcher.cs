@@ -60,6 +60,8 @@ namespace GraveRobber
 
             socket.Close();
 
+            Console.Write($"\nINFO: Safely closed WebSocket {ID}.");
+
             GC.SuppressFinalize(this);
         }
 
@@ -67,23 +69,48 @@ namespace GraveRobber
 
         private void StartSocket()
         {
+            var mre = new ManualResetEvent(false);
+
             try
             {
                 socket = new WebSocket("wss://qa.sockets.stackexchange.com");
-                socket.OnOpen += (o, e) => socket.Send($"1-question-{ID}");
+                socket.OnOpen += (o, e) =>
+                {
+                    socket.Send($"1-question-{ID}");
+                    mre.Set();
+                };
                 socket.OnClose += (o, e) =>
                 {
-                    Thread.Sleep(5000);
-                    if (!dispose) StartSocket();
+                    if (!dispose)
+                    {
+                        Console.Write($"\nWARNING: WebSocket {ID} has closed. Attempting to restart...");
+                        Thread.Sleep(5000);
+                        StartSocket();
+                    }
                 };
-                socket.OnError += (o, e) => { if (OnException != null) OnException(e.Exception); };
+                socket.OnError += (o, e) =>
+                {
+                    Console.Write($"\nERROR: an exception was raised from WebSocket {ID}: {e.Message}");
+                    if (OnException != null) OnException(e.Exception);
+                };
                 socket.OnMessage += (o, e) => HandleMessage(e.Data);
                 socket.Connect();
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                Console.Write($"\nERROR: an exception occurred while opening WebSocket {ID}: {ex.Message}");
                 if (OnException != null) OnException(ex);
+            }
+
+            Thread.Sleep(3000);
+
+            if ((socket?.ReadyState ?? WebSocketState.Closed) == WebSocketState.Open)
+            {
+                Console.Write($"\nINFO: successfully opened WebSocket {ID}.");
+            }
+            else
+            {
+                Console.Write($"\nWARNING: failed to open WebSocket {ID}.");
             }
         }
 
@@ -103,7 +130,7 @@ namespace GraveRobber
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"-----\nAHHH NO!!! I FOUND AN EXCEPTION!!!\n{ex}\nMESSAGE\n{msg}\n------");
+                Console.Write($"\nERROR: an exception occurred whilst handling event data from WebSocket {ID}: {ex.Message}");
             }
         }
     }

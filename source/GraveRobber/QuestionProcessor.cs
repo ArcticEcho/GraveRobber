@@ -229,7 +229,12 @@ namespace GraveRobber
 
                     if (QSMatchesCriteria(status))
                     {
+                        Console.WriteLine("Question: " + status.Url + " was edited and reported.");
                         HandleEditedQuestion(qs);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Question: " + status.Url + " was edited, but did not meet the search criteria.");
                     }
                 }
             };
