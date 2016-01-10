@@ -60,7 +60,7 @@ namespace GraveRobber
             if (closeDate == null) return null;
 
             var edited = EditedSinceClosure(revs);
-            var diff = CalcDiff(revs);
+            var diff = CalcDiff(revs, postID);
             var votes = GetVotes(postID, seLogin);
 
             return new QuestionStatus
@@ -114,7 +114,7 @@ namespace GraveRobber
             }
         }
 
-        private static float CalcDiff(List<KeyValuePair<string, string>> revs)
+        private static float CalcDiff(List<KeyValuePair<string, string>> revs, int postID)
         {
             var closeIndex = -1;
             var revIdBeforeClose = -1;
@@ -174,7 +174,7 @@ namespace GraveRobber
             catch (Exception ex)
             {
                 // Probably hit a tag-only/title-only edit.
-                Console.WriteLine(ex);
+                Console.Write($"\nERROR: an exception was thrown while calculating change difference for post {postID}: {ex.Message}");
                 return -1;
             }
         }
@@ -213,7 +213,7 @@ namespace GraveRobber
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    Console.Write($"\nERROR: an exception was thrown while fetching vote data for post {postID}: {ex.Message}");
                 }
             }
 

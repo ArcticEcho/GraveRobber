@@ -203,7 +203,7 @@ namespace GraveRobber
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    Console.Write($"\nERROR: an exception was thrown while processing new CV-PLS messages: {ex.Message}");
                 }
             }
         }
@@ -229,12 +229,12 @@ namespace GraveRobber
 
                     if (QSMatchesCriteria(status))
                     {
-                        Console.WriteLine("Question: " + status.Url + " was edited and reported.");
+                        Console.Write("\nINFO: post " + status.Url + " was edited and reported.");
                         HandleEditedQuestion(qs);
                     }
                     else
                     {
-                        Console.WriteLine("Question: " + status.Url + " was edited, but did not meet the search criteria.");
+                        Console.Write("\nINFO: post " + status.Url + " was edited, but did not meet the search criteria.");
                     }
                 }
             };
