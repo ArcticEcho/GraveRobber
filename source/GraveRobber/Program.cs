@@ -175,7 +175,7 @@ namespace GraveRobber
                 var watchingQs = qProcessor.WatchedPosts;
                 mainRoom.PostMessageFast($"I'm currently watching `{watchingQs}` post{(watchingQs > 1 ? "s" : "")}.");
             }
-            else if (cmd =="HELP")
+            else if (cmd == "HELP")
             {
                 mainRoom.PostReplyFast(msg, "I *think* I'm a chatbot. Although, I do love a good " +
                                             "bit of poetry every now and then (don't ask me for any " +
@@ -189,10 +189,6 @@ namespace GraveRobber
             else if (cmd == "DIE")
             {
                 mainRoom.PostReplyFast(msg, "You need to be a room owner, moderator, or Sam to kill me.");
-            }
-            else if (cmd.StartsWith("CHECK GRAVE"))
-            {
-                mainRoom.PostReplyFast(msg, "You need at least 3000 reputation to run this command.");
             }
         }
     }
