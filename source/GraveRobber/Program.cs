@@ -173,7 +173,7 @@ namespace GraveRobber
             else if (cmd == "STATS")
             {
                 var watchingQs = qProcessor.WatchedPosts;
-                mainRoom.PostMessageFast($"Posts being watched: `{watchingQs}`.");
+                mainRoom.PostMessageFast($"I'm currently watching `{watchingQs}` post{(watchingQs > 1 ? "s" : "")}.");
             }
             else if (cmd =="HELP")
             {

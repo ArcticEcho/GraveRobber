@@ -94,6 +94,7 @@ namespace GraveRobber
                     if (OnException != null) OnException(e.Exception);
                 };
                 socket.OnMessage += (o, e) => HandleMessage(e.Data);
+                socket.Log.Output = new Action<LogData, string>((l, d) => { });
                 socket.Connect();
             }
             catch (Exception ex)
