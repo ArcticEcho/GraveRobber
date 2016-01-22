@@ -267,7 +267,7 @@ namespace GraveRobber
 
         private bool QSMatchesCriteria(QuestionStatus qs) =>
             qs?.CloseDate != null &&
-            (DateTime.UtcNow - qs.CloseDate.Value).TotalHours > 12 &&
+            //(DateTime.UtcNow - qs.CloseDate.Value).TotalHours > 12 &&
             qs.EditedSinceClosure &&
             qs.Difference > 0.2;
     }
