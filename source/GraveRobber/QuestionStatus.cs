@@ -27,18 +27,13 @@ namespace GraveRobber
     public class QuestionStatus
     {
         public string Url { get; set; }
-
         public DateTime? CloseDate { get; set; }
-
         public bool EditedSinceClosure { get; set; }
-
         public int UpvoteCount { get; set; }
-
         public int DownvoteCount { get; set; }
-
         public float Difference { get; set; }
-
         public DateTime StatusGenTime { get; set; }
+        public string CloseReqMessage { get; set; }
 
 
 

@@ -28,6 +28,7 @@ namespace GraveRobber
     {
         public string Url { get; set; }
         public DateTime CloseDate { get; set; }
+        public string CloseReqMessage { get; set; }
 
 
 

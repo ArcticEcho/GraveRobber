@@ -36,7 +36,7 @@ namespace GraveRobber
     {
         private readonly ManualResetEvent grimReaperMre;
         private readonly ConcurrentDictionary<string, QuestionWatcher> watchers;
-        private readonly ConcurrentQueue<string> queuedUrls;
+        private readonly ConcurrentQueue<KeyValuePair<string, string>> queuedUrls;
         private readonly Logger<QueuedQuestion> watchedPosts;
         private readonly SELogin seLogin;
         private readonly WebClient wc;
@@ -55,7 +55,7 @@ namespace GraveRobber
             seLogin = login;
             wc = new WebClient();
             watchers = new ConcurrentDictionary<string, QuestionWatcher>();
-            queuedUrls = new ConcurrentQueue<string>();
+            queuedUrls = new ConcurrentQueue<KeyValuePair<string, string>>();
             grimReaperMre = new ManualResetEvent(false);
 
             var wpPath = "watched-posts.txt";
@@ -96,14 +96,14 @@ namespace GraveRobber
 
 
 
-        public void WatchPost(string url)
+        public void WatchPost(string url, string cvplsReqUrl)
         {
             if (string.IsNullOrWhiteSpace(url))
             {
                 throw new ArgumentException("'url' must not be null, empty, or entirely whitespace.", "url");
             }
 
-            queuedUrls.Enqueue(url);
+            queuedUrls.Enqueue(new KeyValuePair<string, string>(url, cvplsReqUrl));
         }
 
         public void Dispose()
@@ -163,7 +163,7 @@ namespace GraveRobber
 
         private void ProcessNewUrlsQueue()
         {
-            var url = "";
+            var kv = new KeyValuePair<string, string>();
 
             while (!dispose)
             {
@@ -173,16 +173,17 @@ namespace GraveRobber
 
                     if (dispose || queuedUrls.Count == 0) continue;
 
-                    queuedUrls.TryDequeue(out url);
+                    queuedUrls.TryDequeue(out kv);
                     var id = -1;
-                    var trimmed = TrimUrl(url, out id);
+                    var trimmed = TrimUrl(kv.Key, out id);
 
                     if (watchedPosts.Any(x => x.Url == trimmed))
                     {
                         continue;
                     }
 
-                    var qs = GetQuestionStatus(url, seLogin);
+                    var qs = GetQuestionStatus(kv.Key, seLogin);
+                    qs.CloseReqMessage = kv.Value;
 
                     // Ignore the post as it is either open or deleted.
                     if (qs?.CloseDate == null) continue;
@@ -196,7 +197,8 @@ namespace GraveRobber
                         watchedPosts.EnqueueItem(new QueuedQuestion
                         {
                             Url = trimmed,
-                            CloseDate = (DateTime)qs?.CloseDate
+                            CloseDate = (DateTime)qs?.CloseDate,
+                            CloseReqMessage = kv.Value
                         });
                         watchers[trimmed] = CreateWatcher(qs, out trimmed);
                     }

@@ -102,10 +102,13 @@ namespace GraveRobber
             qProcessor = new QuestionProcessor(seLogin, cr.DataFilesDir);
             qProcessor.SeriousDamnHappened = ex => Console.WriteLine(ex);
             qProcessor.PostFound = qs =>
-            {             //       V Zero-width char here in.
-                var msg = $"A `cv-p​ls`'ed [question]({qs.Url} " +
+            {
+                //                 V Zero-width char in here.
+                var msg = $"A [`cv-p​ls`'ed]({qs.CloseReqMessage}) " +
+                          $"[question]({qs.Url} " +
                           $"\"+{qs.UpvoteCount}/-{Math.Abs(qs.DownvoteCount)}\") " +
-                          $"has been edited ({Math.Round(qs.Difference * 100)}% changed).";
+                          $"has been edited ({Math.Round(qs.Difference * 100)}% changed" +
+                          $"{(qs.Difference == -1 ? ", yes @Sam, it's that bug again" : "")}).";
                 mainRoom.PostMessageFast(msg);
             };
         }
