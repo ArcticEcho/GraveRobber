@@ -131,7 +131,7 @@ namespace GraveRobber
 
                 if (!string.IsNullOrWhiteSpace(url))
                 {
-                    qProcessor.WatchPost(url, $"http://chat.{m.Host}/transcript/{m.ID}");
+                    qProcessor.WatchPost(url, $"http://chat.{m.Host}/transcript/message/{m.ID}");
                 }
             }));
         }
@@ -160,7 +160,7 @@ namespace GraveRobber
                 {
                     if (!string.IsNullOrWhiteSpace(m.Value))
                     {
-                        qProcessor.WatchPost(m.Value, $"http://chat.{m.Key.Host}/transcript/{m.Key.ID}");
+                        qProcessor.WatchPost(m.Value, $"http://chat.{m.Key.Host}/transcript/message/{m.Key.ID}");
                     }
                 }
 
