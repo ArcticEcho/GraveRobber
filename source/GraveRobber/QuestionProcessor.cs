@@ -183,10 +183,11 @@ namespace GraveRobber
                     }
 
                     var qs = GetQuestionStatus(kv.Key, seLogin);
-                    qs.CloseReqMessage = kv.Value;
 
                     // Ignore the post as it is either open or deleted.
                     if (qs?.CloseDate == null) continue;
+
+                    qs.CloseReqMessage = kv.Value;
 
                     if (QSMatchesCriteria(qs))
                     {
