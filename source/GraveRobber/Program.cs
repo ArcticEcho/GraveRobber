@@ -107,7 +107,7 @@ namespace GraveRobber
                           $"[question]({qs.Url}) (" +
                           $"+{qs.UpvoteCount}/-{Math.Abs(qs.DownvoteCount)}) - " +
                           $"[req]({qs.CloseReqMessage}) " +
-                          $"{(qs.Difference == -1 ? ", yes @Sam, it's that bug again" : "")}).";
+                          $"{(qs.Difference == -1 ? " (yes @Sam, it's that bug again)" : "")}";
                 mainRoom.PostMessageFast(msg);
             };
         }
@@ -167,10 +167,10 @@ namespace GraveRobber
             }
             else if (cmd == "COMMANDS")
             {
-                mainRoom.PostMessageFast("    commands ~~~~~~~~~~~~~ Prints this beautifully formatted message.\n" +
-                                         "    stats ~~~~~~~~~~~~~~~~ Displays the number of posts being watched.\n" +
-                                         "    help ~~~~~~~~~~~~~~~~~ Pretty self-explanatory...\n" +
-                                         "    die ~~~~~~~~~~~~~~~~~~ I die a slow and painful death.");
+                mainRoom.PostMessageFast("    commands ~ ~ ~ ~ ~ ~ ~ Prints this beautifully formatted message.\n" +
+                                         "    stats  ~ ~ ~ ~ ~ ~ ~ ~ Displays the number of posts being watched.\n" +
+                                         "    help ~ ~ ~ ~ ~ ~ ~ ~ ~ Pretty self-explanatory...\n" +
+                                         "    die  ~ ~ ~ ~ ~ ~ ~ ~ ~ I die a slow and painful death.");
             }
             else if (cmd == "STATS")
             {
