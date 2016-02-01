@@ -103,11 +103,10 @@ namespace GraveRobber
             qProcessor.SeriousDamnHappened = ex => Console.WriteLine(ex);
             qProcessor.PostFound = qs =>
             {
-                var msg = $"{Math.Round(qs.Difference * 100)}% Changed: " +
+                var msg = $"{Math.Round(qs.Difference * 100)}% changed: " +
                           $"[question]({qs.Url}) (" +
                           $"+{qs.UpvoteCount}/-{Math.Abs(qs.DownvoteCount)}) - " +
-                          $"[req]({qs.CloseReqMessage}) " +
-                          $"{(qs.Difference == -1 ? " (yes @Sam, it's that bug again)" : "")}";
+                          $"[req]({qs.CloseReqMessage})";
                 mainRoom.PostMessageFast(msg);
             };
         }

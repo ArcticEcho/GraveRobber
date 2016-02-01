@@ -41,7 +41,6 @@ namespace GraveRobber
         private static Regex closeDateRegex = new Regex("(?i)<span title=\"(.*?)\" class=\"relativetime\">", regOpts);
         private static Regex revIDRegex = new Regex("^<tr class=\"(owner-)?revision\">\\s+<td class=\"revcell1 vm\" onclick=\"StackExchange.revisions.toggle\\('([a-f0-9\\-]+)'\\)", regOpts);
         private static Regex postUrlRegex = new Regex(@"(?i)^https?://stackoverflow.com/(q(uestions)?|a)\/(\d+)", regOpts);
-        private static WebClient wc = new WebClient();
 
 
 
@@ -94,7 +93,7 @@ namespace GraveRobber
             try
             {
                 var id = postIDRegex.Match(url).Groups[2].Value;
-                var revTable = wc.DownloadString($"http://stackoverflow.com/posts/{id}/revisions");
+                var revTable = new WebClient().DownloadString($"http://stackoverflow.com/posts/{id}/revisions");
                 revTable = revsTableRegex.Match(revTable).Groups[1].Value;
 
                 var revMatches = new List<Match>(revRegex.Matches(revTable).Cast<Match>());
@@ -116,6 +115,7 @@ namespace GraveRobber
 
         private static float CalcDiff(List<KeyValuePair<string, string>> revs, int postID)
         {
+            var wc = new WebClient();
             var closeIndex = -1;
             var revIdBeforeClose = -1;
             var latestRevI = -1;
