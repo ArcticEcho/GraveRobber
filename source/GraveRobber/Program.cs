@@ -169,12 +169,17 @@ namespace GraveRobber
                 mainRoom.PostMessageFast("    commands ~ ~ ~ ~ ~ ~ ~ Prints this beautifully formatted message.\n" +
                                          "    stats  ~ ~ ~ ~ ~ ~ ~ ~ Displays the number of posts being watched.\n" +
                                          "    help ~ ~ ~ ~ ~ ~ ~ ~ ~ Pretty self-explanatory...\n" +
+                                         "    alive  ~ ~ ~ ~ ~ ~ ~ ~ Checks if I'm still running.\n" +
                                          "    die  ~ ~ ~ ~ ~ ~ ~ ~ ~ I die a slow and painful death.");
             }
             else if (cmd == "STATS")
             {
                 var watchingQs = qProcessor.WatchedPosts;
                 mainRoom.PostMessageFast($"I'm currently watching `{watchingQs}` post{(watchingQs > 1 ? "s" : "")}.");
+            }
+            else if (cmd.StartsWith("ALIVE"))
+            {
+                mainRoom.PostReplyFast(msg, "What do you think?");
             }
             else if (cmd == "HELP")
             {

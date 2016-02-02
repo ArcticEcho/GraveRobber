@@ -28,6 +28,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using ServiceStack.Text;
 using static GraveRobber.QuestionChecker;
 
 namespace GraveRobber
@@ -39,7 +40,6 @@ namespace GraveRobber
         private readonly ConcurrentQueue<KeyValuePair<string, string>> queuedUrls;
         private readonly Logger<QueuedQuestion> watchedPosts;
         private readonly SELogin seLogin;
-        private readonly WebClient wc;
         private bool dispose;
 
         public int WatchedPosts => watchers?.Count ?? 0;
@@ -53,7 +53,6 @@ namespace GraveRobber
         public QuestionProcessor(SELogin login, string dataFilesDir = null)
         {
             seLogin = login;
-            wc = new WebClient();
             watchers = new ConcurrentDictionary<string, QuestionWatcher>();
             queuedUrls = new ConcurrentQueue<KeyValuePair<string, string>>();
             grimReaperMre = new ManualResetEvent(false);
@@ -118,7 +117,6 @@ namespace GraveRobber
                 Task.Run(() =>w.Dispose());
             }
 
-            wc.Dispose();
             grimReaperMre.Dispose();
             watchedPosts.Dispose();
 
@@ -131,6 +129,7 @@ namespace GraveRobber
         {
             var qqsToRemove = new HashSet<QueuedQuestion>();
             var postsCpy = new HashSet<QueuedQuestion>();
+            var wc = new WebClient();
 
             while (!dispose)
             {
@@ -177,10 +176,7 @@ namespace GraveRobber
                     var id = -1;
                     var trimmed = TrimUrl(kv.Key, out id);
 
-                    if (watchedPosts.Any(x => x.Url == trimmed))
-                    {
-                        continue;
-                    }
+                    if (watchedPosts.Any(x => x.Url == trimmed)) continue;
 
                     var qs = GetQuestionStatus(kv.Key, seLogin);
 
@@ -239,6 +235,8 @@ namespace GraveRobber
                     {
                         Console.Write("\nINFO: post " + status.Url + " was edited, but did not meet the search criteria.");
                     }
+
+                    Console.Write($"\nQuestion status:\n{status.Dump()}");
                 }
             };
         }
