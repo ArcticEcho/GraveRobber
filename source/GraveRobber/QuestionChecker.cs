@@ -207,7 +207,7 @@ namespace GraveRobber
                     var res = seLogin.Get($"http://stackoverflow.com/posts/{postID}/vote-counts");
                     var json = DynamicJson.Deserialize(res);
                     var up = int.Parse((string)json.up);
-                    var down = int.Parse((string)json.down);
+                    var down = Math.Abs(int.Parse((string)json.down));
 
                     return new KeyValuePair<int, int>(up, down);
                 }

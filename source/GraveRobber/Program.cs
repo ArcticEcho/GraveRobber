@@ -103,6 +103,7 @@ namespace GraveRobber
             qProcessor.SeriousDamnHappened = ex => Console.WriteLine(ex);
             qProcessor.PostFound = qs =>
             {
+                Console.WriteLine($"\nINFO: QS reached event handler, diff: {qs.Difference}. \n Stack trace:\n{Environment.StackTrace}");
                 var msg = $"{Math.Round(qs.Difference * 100)}% changed: " +
                           $"[question]({qs.Url}) (" +
                           $"+{qs.UpvoteCount}/-{Math.Abs(qs.DownvoteCount)}) - " +

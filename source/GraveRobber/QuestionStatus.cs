@@ -37,13 +37,6 @@ namespace GraveRobber
 
 
 
-        public QuestionStatus()
-        {
-            StatusGenTime = DateTime.UtcNow;
-        }
-
-
-
         public override int GetHashCode()
         {
             return Url?.GetHashCode() ?? 0;
