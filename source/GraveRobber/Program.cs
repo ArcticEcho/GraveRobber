@@ -184,11 +184,8 @@ namespace GraveRobber
             }
             else if (cmd == "HELP")
             {
-                mainRoom.PostReplyFast(msg, "I *think* I'm a chatbot. Although, I do love a good " +
-                                            "bit of poetry every now and then (don't ask me for any " +
-                                            "though, I'm useless). I also love being in this room so much " +
-                                            "in fact, that I've decided to check up on all your [tag:cv-pls]'es " +
-                                            "to see if they need reopening (I'm not 100% accurate, so only take " +
+                mainRoom.PostReplyFast(msg, "I'm (yet) another chatbot that lives in this room. I check up on all [tag:cv-pls] " +
+                                            "requests to see if they might warrant reopening (I'm not 100% accurate, so only take " +
                                             "messages as suggestions). You can check out what I can do by using: " +
                                             "`commands`. You can find my GH repo " +
                                             "[here](https://github.com/SO-Close-Vote-Reviewers/GraveRobber).");
