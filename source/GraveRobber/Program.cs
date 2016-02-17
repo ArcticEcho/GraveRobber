@@ -61,10 +61,10 @@ namespace GraveRobber
 
 #if DEBUG
             Console.WriteLine("done.\nGraveRobber started (debug).");
-            mainRoom.PostMessageFast($"GraveRobber started {currentVer} (debug).");
+            mainRoom.PostMessageLight($"GraveRobber started {currentVer} (debug).");
 #else
             Console.WriteLine("done.\nGraveRobber started.");
-            mainRoom.PostMessageFast($"GraveRobber started {currentVer}.");
+            mainRoom.PostMessageLight($"GraveRobber started {currentVer}.");
 #endif
 
             shutdownMre.WaitOne();
@@ -108,7 +108,7 @@ namespace GraveRobber
                           $"[question]({qs.Url}) (" +
                           $"+{qs.UpvoteCount}/-{Math.Abs(qs.DownvoteCount)}) - " +
                           $"[req]({qs.CloseReqMessage})";
-                mainRoom.PostMessageFast(msg);
+                mainRoom.PostMessageLight(msg);
             };
         }
 
@@ -118,12 +118,10 @@ namespace GraveRobber
 
             mainRoom = chatClient.JoinRoom(cr.RoomUrl);
             mainRoom.InitialisePrimaryContentOnly = true;
-            mainRoom.AggressiveWebSocketRecovery = true;
             mainRoom.EventManager.ConnectListener(EventType.UserMentioned, new Action<Message>(HandleCommand));
 
             watchingRoom = chatClient.JoinRoom("http://chat.stackoverflow.com/rooms/90230/cv-request-graveyard");//("http://chat.stackoverflow.com/rooms/68414/socvr-testing-facility");//
             watchingRoom.InitialisePrimaryContentOnly = true;
-            watchingRoom.AggressiveWebSocketRecovery = true;
             watchingRoom.EventManager.ConnectListener(EventType.MessageMovedIn, new Action<Message>(m =>
             {
                 var url = messageFetcher.GetPostUrl(m);
@@ -145,13 +143,13 @@ namespace GraveRobber
             if (cmd == "DIE" && (msg.Author.IsRoomOwner ||
                 msg.Author.IsMod || msg.Author.ID == 2246344))
             {
-                mainRoom.PostMessageFast("Bye.");
+                mainRoom.PostMessageLight("Bye.");
                 shutdownMre.Set();
             }
             else if (cmd == "REFILL" && (msg.Author.IsRoomOwner ||
                      msg.Author.IsMod || msg.Author.ID == 2246344))
             {
-                mainRoom.PostReplyFast(msg, "Working...");
+                mainRoom.PostReplyLight(msg, "Working...");
 
                 var ms = messageFetcher.GetRecentMessage(mainRoom, 500);
 
@@ -163,28 +161,28 @@ namespace GraveRobber
                     }
                 }
 
-                mainRoom.PostReplyFast(msg, "Done.");
+                mainRoom.PostReplyLight(msg, "Done.");
             }
             else if (cmd == "COMMANDS")
             {
-                mainRoom.PostMessageFast("    commands ~ ~ ~ ~ ~ ~ ~ Prints this beautifully formatted message.\n" +
-                                         "    stats  ~ ~ ~ ~ ~ ~ ~ ~ Displays the number of posts being watched.\n" +
-                                         "    help ~ ~ ~ ~ ~ ~ ~ ~ ~ Pretty self-explanatory...\n" +
-                                         "    alive  ~ ~ ~ ~ ~ ~ ~ ~ Checks if I'm still running.\n" +
-                                         "    die  ~ ~ ~ ~ ~ ~ ~ ~ ~ I die a slow and painful death.");
+                mainRoom.PostMessageLight("    commands ~ ~ ~ ~ ~ ~ ~ Prints this beautifully formatted message.\n" +
+                                          "    stats  ~ ~ ~ ~ ~ ~ ~ ~ Displays the number of posts being watched.\n" +
+                                          "    help ~ ~ ~ ~ ~ ~ ~ ~ ~ Pretty self-explanatory...\n" +
+                                          "    alive  ~ ~ ~ ~ ~ ~ ~ ~ Checks if I'm still running.\n" +
+                                          "    die  ~ ~ ~ ~ ~ ~ ~ ~ ~ I die a slow and painful death.");
             }
             else if (cmd == "STATS")
             {
                 var watchingQs = qProcessor.WatchedPosts;
-                mainRoom.PostMessageFast($"I'm currently watching `{watchingQs}` post{(watchingQs > 1 ? "s" : "")}.");
+                mainRoom.PostMessageLight($"I'm currently watching `{watchingQs}` post{(watchingQs > 1 ? "s" : "")}.");
             }
             else if (cmd.StartsWith("ALIVE"))
             {
-                mainRoom.PostReplyFast(msg, "What do you think?");
+                mainRoom.PostReplyLight(msg, "What do you think?");
             }
             else if (cmd == "HELP")
             {
-                mainRoom.PostReplyFast(msg, "I'm (yet) another chatbot that lives in this room. I check up on all [tag:cv-pls] " +
+                mainRoom.PostReplyLight(msg, "I'm (yet) another chatbot that lives in this room. I check up on all [tag:cv-pls] " +
                                             "requests to see if they might warrant reopening (I'm not 100% accurate, so only take " +
                                             "messages as suggestions). You can check out what I can do by using: " +
                                             "`commands`. You can find my GH repo " +
@@ -192,7 +190,7 @@ namespace GraveRobber
             }
             else if (cmd == "DIE")
             {
-                mainRoom.PostReplyFast(msg, "You need to be a room owner, moderator, or Sam to kill me.");
+                mainRoom.PostReplyLight(msg, "You need to be a room owner, moderator, or Sam to kill me.");
             }
         }
     }
