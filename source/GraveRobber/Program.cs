@@ -183,10 +183,10 @@ namespace GraveRobber
             }
             else if (cmd == "HELP")
             {
-                mainRoom.PostReplyLight(msg, "I'm (yet) another chatbot that lives in this room. I check up on all [tag:cv-pls] " +
-                                            "requests to see if they might warrant reopening (I'm not 100% accurate, so only take " +
-                                            "messages as suggestions). You can check out what I can do by using: " +
-                                            "`commands`. You can find my GH repo " +
+                mainRoom.PostReplyLight(msg, "I'm (yet) another chatbot who lives in this room. I check up on all [tag:cv-pls] " +
+                                            "requests to see if they warrant reopening (I'm not 100% accurate, so only take " +
+                                            "my messages as *suggestions*). You can check out what I can do by using: " +
+                                            "`commands`. My GH repo can be found " +
                                             "[here](https://github.com/SO-Close-Vote-Reviewers/GraveRobber).");
             }
             else if (cmd == "DIE")
