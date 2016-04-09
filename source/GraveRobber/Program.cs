@@ -86,8 +86,6 @@ namespace GraveRobber
         {
             var cr = new ConfigReader();
 
-            chatClient = new Client(cr.AccountEmailAddressPrimary, cr.AccountPasswordPrimary);
-
             if (!string.IsNullOrWhiteSpace(cr.AccountEmailAddressSecondary) &&
                 !string.IsNullOrWhiteSpace(cr.AccountPasswordSecondary))
             {
@@ -116,11 +114,14 @@ namespace GraveRobber
         {
             var cr = new ConfigReader();
 
+            chatClient = new Client(cr.AccountEmailAddressPrimary, cr.AccountPasswordPrimary);
+
             mainRoom = chatClient.JoinRoom(cr.RoomUrl);
             mainRoom.InitialisePrimaryContentOnly = true;
+            mainRoom.StripMention = true;
             mainRoom.EventManager.ConnectListener(EventType.UserMentioned, new Action<Message>(HandleCommand));
 
-            watchingRoom = chatClient.JoinRoom("http://chat.stackoverflow.com/rooms/90230/cv-request-graveyard");//("http://chat.stackoverflow.com/rooms/68414/socvr-testing-facility");//
+            watchingRoom = chatClient.JoinRoom("http://chat.stackoverflow.com/rooms/90230/cv-request-graveyard", true);//("http://chat.stackoverflow.com/rooms/68414/socvr-testing-facility", true);//
             watchingRoom.InitialisePrimaryContentOnly = true;
             watchingRoom.EventManager.ConnectListener(EventType.MessageMovedIn, new Action<Message>(m =>
             {

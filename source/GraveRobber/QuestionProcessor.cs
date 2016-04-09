@@ -114,7 +114,7 @@ namespace GraveRobber
 
             foreach (var w in watchers.Values)
             {
-                Task.Run(() =>w.Dispose());
+                Task.Run(() => w.Dispose());
             }
 
             grimReaperMre.Dispose();
