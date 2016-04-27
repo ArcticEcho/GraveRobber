@@ -116,7 +116,7 @@ namespace GraveRobber
 
             chatClient = new Client(cr.AccountEmailAddressPrimary, cr.AccountPasswordPrimary);
 
-            mainRoom = chatClient.JoinRoom(cr.RoomUrl);
+            mainRoom = chatClient.JoinRoom(cr.RoomUrl, true);
             mainRoom.InitialisePrimaryContentOnly = true;
             mainRoom.StripMention = true;
             mainRoom.EventManager.ConnectListener(EventType.UserMentioned, new Action<Message>(HandleCommand));
@@ -147,7 +147,7 @@ namespace GraveRobber
                 mainRoom.PostMessageLight("Bye.");
                 shutdownMre.Set();
             }
-            else if (cmd == "REFILL" && (msg.Author.IsRoomOwner ||
+            else if (cmd == "INIT" && (msg.Author.IsRoomOwner ||
                      msg.Author.IsMod || msg.Author.ID == 2246344))
             {
                 mainRoom.PostReplyLight(msg, "Working...");
@@ -175,7 +175,7 @@ namespace GraveRobber
             else if (cmd == "STATS")
             {
                 var watchingQs = qProcessor.WatchedPosts;
-                mainRoom.PostMessageLight($"I'm currently watching `{watchingQs}` post{(watchingQs > 1 ? "s" : "")}.");
+                mainRoom.PostMessageLight($"I'm currently watching `{watchingQs}` post{(watchingQs == 1 ? "" : "s")}.");
             }
             else if (cmd.StartsWith("ALIVE"))
             {

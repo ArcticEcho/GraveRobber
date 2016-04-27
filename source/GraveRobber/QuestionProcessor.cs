@@ -76,11 +76,11 @@ namespace GraveRobber
 
                     var qs = GetQuestionStatus(q.Url, seLogin);
 
-                    if (qs == null) continue;
+                    if (qs?.CloseDate == null) continue;
 
-                    var url = "";
-                    var qw = CreateWatcher(qs, out url);
-                    watchers[url] = qw;
+                    var id = -1;
+                    var url = TrimUrl(q.Url, out id);
+                    watchers[url] = CreateWatcher(url, id);
                 }
             });
 
@@ -128,17 +128,21 @@ namespace GraveRobber
         private void GrimReaper()
         {
             var qqsToRemove = new HashSet<QueuedQuestion>();
-            var postsCpy = new HashSet<QueuedQuestion>();
             var wc = new WebClient();
 
             while (!dispose)
             {
-                postsCpy = new HashSet<QueuedQuestion>(watchedPosts);
-
-                foreach (var q in postsCpy)
+                foreach (var q in watchedPosts)
                 {
-                    grimReaperMre.WaitOne(TimeSpan.FromSeconds(15));
                     if (dispose) break;
+
+                    if ((DateTime.UtcNow - q.CloseDate).TotalDays > 30)
+                    {
+                        qqsToRemove.Add(q);
+                        continue;
+                    }
+
+                    grimReaperMre.WaitOne(TimeSpan.FromSeconds(15));
 
                     var id = -1;
                     TrimUrl(q.Url, out id);
@@ -173,10 +177,10 @@ namespace GraveRobber
                     if (dispose || queuedUrls.Count == 0) continue;
 
                     queuedUrls.TryDequeue(out kv);
-                    var id = -1;
-                    var trimmed = TrimUrl(kv.Key, out id);
+                    var qId = -1;
+                    var qUrl = TrimUrl(kv.Key, out qId);
 
-                    if (watchedPosts.Any(x => x.Url == trimmed)) continue;
+                    if (watchedPosts.Any(x => x.Url == qUrl)) continue;
 
                     var qs = GetQuestionStatus(kv.Key, seLogin);
 
@@ -193,11 +197,11 @@ namespace GraveRobber
                     {
                         watchedPosts.EnqueueItem(new QueuedQuestion
                         {
-                            Url = trimmed,
+                            Url = qUrl,
                             CloseDate = (DateTime)qs?.CloseDate,
                             CloseReqMessage = kv.Value
                         });
-                        watchers[trimmed] = CreateWatcher(qs, out trimmed);
+                        watchers[qUrl] = CreateWatcher(qUrl, qId);
                     }
                 }
                 catch (Exception ex)
@@ -207,29 +211,19 @@ namespace GraveRobber
             }
         }
 
-        private QuestionWatcher CreateWatcher(QuestionStatus qs, out string trimmedUrl)
+        private QuestionWatcher CreateWatcher(string url, int id)
         {
-            var id = -1;
-            var trimmed = TrimUrl(qs.Url, out id);
-            trimmedUrl = trimmed;
-
             return new QuestionWatcher(id)
             {
-                OnException = ex =>
-                {
-                    if (SeriousDamnHappened != null)
-                    {
-                        SeriousDamnHappened(ex);
-                    }
-                },
+                OnException = ex => SeriousDamnHappened?.Invoke(ex),
                 QuestionEdited = () =>
                 {
-                    var status = GetQuestionStatus(trimmed, seLogin);
+                    var status = GetQuestionStatus(url, seLogin);
 
                     if (QSMatchesCriteria(status))
                     {
                         Console.Write("\nINFO: post " + status.Url + " was edited and reported.");
-                        HandleEditedQuestion(qs);
+                        HandleEditedQuestion(status);
                     }
                     else
                     {
@@ -245,10 +239,7 @@ namespace GraveRobber
         {
             RemoveWatchedPost(qs.Url);
 
-            if (PostFound != null)
-            {
-                PostFound(qs);
-            }
+            PostFound?.Invoke(qs);
         }
 
         private void RemoveWatchedPost(string url)
