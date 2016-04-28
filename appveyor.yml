@@ -1,4 +1,4 @@
-version: 1.13.{build}.1
+version: 1.13.{build}.2
 configuration: Release
 
 platform: Any CPU
@@ -6,9 +6,9 @@ platform: Any CPU
 assembly_info:
   patch: true
   file: source\GraveRobber\Properties\AssemblyInfo.cs
-  assembly_version: '1.13.0.1'
+  assembly_version: '1.13.0.2'
   assembly_file_version: '{version}'
-  assembly_informational_version: '1.13.1'
+  assembly_informational_version: '1.13.2'
 
 before_build:
 - nuget restore source\GraveRobber.sln

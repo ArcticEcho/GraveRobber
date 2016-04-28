@@ -237,6 +237,8 @@ namespace GraveRobber
 
         private void HandleEditedQuestion(QuestionStatus qs)
         {
+            qs.CloseReqMessage = watchedPosts.SingleOrDefault(x => x.Url == qs.Url)?.CloseReqMessage;
+
             RemoveWatchedPost(qs.Url);
 
             PostFound?.Invoke(qs);

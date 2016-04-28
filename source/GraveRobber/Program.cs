@@ -104,8 +104,10 @@ namespace GraveRobber
                 Console.WriteLine($"\nINFO: QS reached event handler, diff: {qs.Difference}. \n Stack trace:\n{Environment.StackTrace}");
                 var msg = $"{Math.Round(qs.Difference * 100)}% changed: " +
                           $"[question]({qs.Url}) (" +
-                          $"+{qs.UpvoteCount}/-{Math.Abs(qs.DownvoteCount)}) - " +
-                          $"[req]({qs.CloseReqMessage})";
+                          $"+{qs.UpvoteCount}/-{Math.Abs(qs.DownvoteCount)})" +
+                          (string.IsNullOrWhiteSpace(qs.CloseReqMessage) ?
+                            "" : 
+                            $" - [req]({qs.CloseReqMessage})");
                 mainRoom.PostMessageLight(msg);
             };
         }
