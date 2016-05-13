@@ -28,7 +28,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using ServiceStack.Text;
 using static GraveRobber.QuestionChecker;
 
 namespace GraveRobber
@@ -229,8 +228,6 @@ namespace GraveRobber
                     {
                         Console.Write("\nINFO: post " + status.Url + " was edited, but did not meet the search criteria.");
                     }
-
-                    Console.Write($"\nQuestion status:\n{status.Dump()}");
                 }
             };
         }

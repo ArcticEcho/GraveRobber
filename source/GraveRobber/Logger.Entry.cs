@@ -28,7 +28,7 @@ namespace GraveRobber
     {
         public class Entry
         {
-            public object Data { get; set; }
+            public T Data { get; set; }
 
             public DateTime Timestamp { get; set; }
         }

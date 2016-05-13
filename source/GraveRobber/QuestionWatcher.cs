@@ -23,8 +23,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using ServiceStack;
-using ServiceStack.Text;
+using Jil;
 using WebSocketSharp;
 
 namespace GraveRobber
@@ -91,7 +90,7 @@ namespace GraveRobber
                 socket.OnError += (o, e) =>
                 {
                     Console.Write($"\nERROR: an exception was raised from WebSocket {ID}: {e.Message}");
-                    if (OnException != null) OnException(e.Exception);
+                    OnException?.Invoke(e.Exception);
                 };
                 socket.OnMessage += (o, e) => HandleMessage(e.Data);
                 socket.Log.Output = new Action<LogData, string>((l, d) => { });
@@ -100,7 +99,7 @@ namespace GraveRobber
             catch (Exception ex)
             {
                 Console.Write($"\nERROR: an exception occurred while opening WebSocket {ID}: {ex.Message}");
-                if (OnException != null) OnException(ex);
+                OnException?.Invoke(ex);
             }
 
             Thread.Sleep(3000);
@@ -119,8 +118,8 @@ namespace GraveRobber
         {
             try
             {
-                var outter = JsonSerializer.DeserializeFromString<Dictionary<string, object>>(msg);
-                var inner = JsonSerializer.DeserializeFromString<Dictionary<string, object>>((string)outter["data"]);
+                var outter = JSON.Deserialize<Dictionary<string, object>>(msg);
+                var inner = JSON.Deserialize<Dictionary<string, object>>(outter["data"].ToString());
 
                 if (inner.ContainsKey("a") && inner.ContainsKey("id") &&
                     (string)inner["a"] == "post-edit" && (string)inner["id"] == ID.ToString() &&

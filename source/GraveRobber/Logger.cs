@@ -25,10 +25,9 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ServiceStack.Text;
+using Jil;
 
 namespace GraveRobber
 {
@@ -66,7 +65,7 @@ namespace GraveRobber
                 var lines = File.ReadLines(logFileName);
                 foreach (var line in lines)
                 {
-                    var entry = JsonSerializer.DeserializeFromString<Entry>(line);
+                    var entry = JSON.Deserialize<Entry>(line);
 
                     data[entry.Data.GetHashCode()] = entry;
                 }
@@ -99,7 +98,7 @@ namespace GraveRobber
         {
             foreach (var entry in data.Values)
             {
-                yield return (T)entry.Data;
+                yield return entry.Data;
             }
         }
 
@@ -146,7 +145,7 @@ namespace GraveRobber
 
                 foreach (var entry in data.Values)
                 {
-                    var line = JsonSerializer.SerializeToString(entry);
+                    var line = JSON.Serialize(entry);
 
                     File.AppendAllLines(temp, new[] { line });
                 }

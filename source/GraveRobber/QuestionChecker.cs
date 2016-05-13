@@ -25,7 +25,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
-using ServiceStack;
+using Jil;
 
 namespace GraveRobber
 {
@@ -205,9 +205,9 @@ namespace GraveRobber
                 try
                 {
                     var res = seLogin.Get($"http://stackoverflow.com/posts/{postID}/vote-counts");
-                    var json = DynamicJson.Deserialize(res);
-                    var up = int.Parse((string)json.up);
-                    var down = Math.Abs(int.Parse((string)json.down));
+                    var json = JSON.Deserialize<Dictionary<string, string>>(res);
+                    var up = int.Parse(json["up"]);
+                    var down = Math.Abs(int.Parse(json["down"]));
 
                     return new KeyValuePair<int, int>(up, down);
                 }

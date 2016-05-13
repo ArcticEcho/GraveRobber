@@ -28,7 +28,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using ChatExchangeDotNet;
-using ServiceStack.Text;
+using Jil;
 
 namespace GraveRobber
 {
@@ -62,12 +62,13 @@ namespace GraveRobber
                 { "fkey", fkey }
             }));
 
-            var json = JsonSerializer.DeserializeFromString<Dictionary<string, Dictionary<string, object>[]>>(jsonStr);
+            var json = JSON.Deserialize<Dictionary<string, object>>(jsonStr);
+            var events = JSON.Deserialize<Dictionary<string, object>[]>(json["events"].ToString());
             var msgs = new Dictionary<Message, string>();
 
-            foreach (var m in json["events"])
+            foreach (var m in events)
             {
-                var idStr = (string)m["message_id"];
+                var idStr = m["message_id"].ToString();
                 var id = -1;
 
                 if (!int.TryParse(idStr, out id)) continue;
