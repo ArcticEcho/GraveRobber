@@ -1,6 +1,6 @@
 ﻿/*
  * GraveRobber. A .NET PoC program for fetching data from the SOCVR graveyards.
- * Copyright © 2015, ArcticEcho.
+ * Copyright © 2016, ArcticEcho.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -59,8 +59,6 @@ namespace GraveRobber
 
             socket.Close();
 
-            Console.Write($"\nINFO: Safely closed WebSocket {ID}.");
-
             GC.SuppressFinalize(this);
         }
 
@@ -82,14 +80,13 @@ namespace GraveRobber
                 {
                     if (!dispose)
                     {
-                        Console.Write($"\nWARNING: WebSocket {ID} has closed. Attempting to restart...");
+                        Console.WriteLine($"WARNING: WebSocket {ID} has closed. Attempting to restart...");
                         Thread.Sleep(5000);
                         StartSocket();
                     }
                 };
                 socket.OnError += (o, e) =>
                 {
-                    Console.Write($"\nERROR: an exception was raised from WebSocket {ID}: {e.Message}");
                     OnException?.Invoke(e.Exception);
                 };
                 socket.OnMessage += (o, e) => HandleMessage(e.Data);
@@ -98,7 +95,6 @@ namespace GraveRobber
             }
             catch (Exception ex)
             {
-                Console.Write($"\nERROR: an exception occurred while opening WebSocket {ID}: {ex.Message}");
                 OnException?.Invoke(ex);
             }
 
@@ -106,11 +102,11 @@ namespace GraveRobber
 
             if ((socket?.ReadyState ?? WebSocketState.Closed) == WebSocketState.Open)
             {
-                Console.Write($"\nINFO: successfully opened WebSocket {ID}.");
+                Console.WriteLine($"INFO: successfully opened WebSocket {ID}.");
             }
             else
             {
-                Console.Write($"\nWARNING: failed to open WebSocket {ID}.");
+                Console.WriteLine($"WARNING: failed to open WebSocket {ID}.");
             }
         }
 
@@ -130,7 +126,7 @@ namespace GraveRobber
             }
             catch (Exception ex)
             {
-                Console.Write($"\nERROR: an exception occurred whilst handling event data from WebSocket {ID}: {ex.Message}");
+                OnException?.Invoke(ex);
             }
         }
     }

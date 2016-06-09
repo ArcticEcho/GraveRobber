@@ -21,16 +21,18 @@
 
 
 using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
-namespace GraveRobber
+namespace GraveRobber.Database
 {
-    public class QuestionStatus
+    public class WatchedQuestion
     {
+        [Key]
         public int PostID { get; set; }
-        public DateTime? CloseDate { get; set; }
-        public bool EditedSinceClosure { get; set; }
-        public int UpvoteCount { get; set; }
-        public int DownvoteCount { get; set; }
-        public float Difference { get; set; }
+        public DateTime CloseDate { get; set; }
+        public string CVPlsMessageUrl { get; set; }
+        public virtual User CVPlsIssuer { get; set; }
+        public virtual ICollection<User> CloseVoters { get; set; }
     }
 }

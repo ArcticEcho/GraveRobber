@@ -1,6 +1,6 @@
 ﻿/*
  * GraveRobber. A .NET PoC program for fetching data from the SOCVR graveyards.
- * Copyright © 2015, ArcticEcho.
+ * Copyright © 2016, ArcticEcho.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,17 +20,13 @@
 
 
 
-using System;
+using System.Collections.Generic;
 
-namespace GraveRobber
+namespace GraveRobber.Database
 {
-    public sealed partial class Logger<T>
+    public class User
     {
-        public class Entry
-        {
-            public T Data { get; set; }
-
-            public DateTime Timestamp { get; set; }
-        }
+        public int UserID { get; set; }
+        public virtual ICollection<CloseVote> CVs { get; set; }
     }
 }

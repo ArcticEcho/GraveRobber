@@ -1,6 +1,6 @@
 ﻿/*
  * GraveRobber. A .NET PoC program for fetching data from the SOCVR graveyards.
- * Copyright © 2015, ArcticEcho.
+ * Copyright © 2016, ArcticEcho.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,27 +25,38 @@ using System.IO;
 namespace GraveRobber
 {
     /// <summary>
-    /// Searches through enviornmnet variables (for docker) or the configuration file 
+    /// Searches through environment variables (for docker) or the configuration file 
     /// for values that help to initiate this program.
     /// </summary>
-    class ConfigReader
+    public static class ConfigReader
     {
+        /// <summary>
+        /// Gets the database connection string to used to save/fetch watched questions.
+        /// </summary>
+        public static string DBConnection
+        {
+            get
+            {
+                return GetSetting("DB_CONNECTION", "DB Connection");
+            }
+        }
         /// <summary>
         /// Gets the Stack Exchange email address for the primary (chat) account
         /// to use. Important, this must be a Stack Exchange OAuth account.
         /// </summary>
-        public string AccountEmailAddressPrimary
+        public static string AccountEmailAddressPrimary
         {
             get
             {
                 return GetSetting("STACK_EXCHANGE_EMAIL_PRIMARY", "SE Email Primary");
             }
         }
+
         /// <summary>
         /// Gets the Stack Exchange email address for the secondary (polling) account
         /// to use. Important, this must be a Stack Exchange OAuth account.
         /// </summary>
-        public string AccountEmailAddressSecondary
+        public static string AccountEmailAddressSecondary
         {
             get
             {
@@ -56,7 +67,7 @@ namespace GraveRobber
         /// <summary>
         /// Gets the password for the primary account to use.
         /// </summary>
-        public string AccountPasswordPrimary
+        public static string AccountPasswordPrimary
         {
             get
             {
@@ -67,7 +78,7 @@ namespace GraveRobber
         /// <summary>
         /// Gets the password for the secondary account to use.
         /// </summary>
-        public string AccountPasswordSecondary
+        public static string AccountPasswordSecondary
         {
             get
             {
@@ -78,34 +89,11 @@ namespace GraveRobber
         /// <summary>
         /// The room this bot will join, listen to, and post messages to.
         /// </summary>
-        public string RoomUrl
+        public static string RoomUrl
         {
             get
             {
                 return GetSetting("CHAT_ROOM_URL", "RoomURL");
-            }
-        }
-
-        /// <summary>
-        /// The directory containing the data files which hold
-        /// information about the posts being watched.
-        /// </summary>
-        public string DataFilesDir
-        {
-            get
-            {
-                return GetSetting("DATA_FILES_DIR", "DataFilesDir");
-            }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public string ReviewReminderPeriod
-        {
-            get
-            {
-                return GetSetting("REVIEW_REMINDER_MINS", "ReviewReminderMins");
             }
         }
 
@@ -118,7 +106,7 @@ namespace GraveRobber
         /// <param name="enviornmentVariableName">The expected name of the environment variable.</param>
         /// <param name="settingName">The expected name of the config value in the settings file.</param>
         /// <returns>Magical data if successful, otherwise null.</returns>
-        private string GetSetting(string enviornmentVariableName, string settingName)
+        private static string GetSetting(string enviornmentVariableName, string settingName)
         {
             // First, check if the value exists in an environment variable (for docker).
             var envValue = Environment.GetEnvironmentVariable(enviornmentVariableName);

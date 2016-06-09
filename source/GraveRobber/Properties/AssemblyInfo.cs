@@ -1,6 +1,6 @@
 ﻿/*
  * GraveRobber. A .NET PoC program for fetching data from the SOCVR graveyards.
- * Copyright © 2015, ArcticEcho.
+ * Copyright © 2016, ArcticEcho.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,11 +28,11 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("GraveRobber")]
-[assembly: AssemblyCopyright("Copyright © ArcticEcho 2015")]
+[assembly: AssemblyCopyright("Copyright © ArcticEcho 2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
 [assembly: Guid("9a4dd7af-df78-47d8-8751-58b93bf5594a")]
-[assembly: AssemblyVersion("1.14.0.0")]
-[assembly: AssemblyFileVersion("1.13.0.2")]
-[assembly: AssemblyInformationalVersion("1.14.0")]
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]
+[assembly: AssemblyInformationalVersion("2.0.0")]

@@ -1,6 +1,6 @@
 ﻿/*
  * GraveRobber. A .NET PoC program for fetching data from the SOCVR graveyards.
- * Copyright © 2015, ArcticEcho.
+ * Copyright © 2016, ArcticEcho.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,16 +25,17 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using ChatExchangeDotNet;
+using GraveRobber.Database;
 
 namespace GraveRobber
 {
     class Program
     {
-        private static readonly string currentVer = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
         private static readonly ManualResetEvent shutdownMre = new ManualResetEvent(false);
         private static readonly MessageFetcher messageFetcher = new MessageFetcher();
         private static readonly SELogin seLogin = new SELogin();
-        private static QuestionProcessor qProcessor;
+        private static QuestionWatcherPool qwPool;
+        private static QuestionChecker qChecker;
         private static Client chatClient;
         private static Room mainRoom;
         private static Room watchingRoom;
@@ -43,6 +44,9 @@ namespace GraveRobber
 
         public static void Main(string[] args)
         {
+            var fileVer = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location);
+            var currentVer = $"{fileVer.FileMajorPart}.{fileVer.FileMinorPart}.{fileVer.FilePrivatePart}";
+
             Console.Title = $"GraveRobber {currentVer}";
             Console.CancelKeyPress += (o, oo) =>
             {
@@ -52,8 +56,8 @@ namespace GraveRobber
 
             Console.Write("Authenticating...");
             InitialiseFromConfig();
-            Console.Write("done.\nStarting question processor...");
-            StartQuestionProcessor();
+            Console.Write("done.\nInitialising question watcher pool...");
+            StartQuestionWatcherPool();
             Console.Write("done.\nJoining chat room(s)...");
             JoinRooms();
 
@@ -65,6 +69,8 @@ namespace GraveRobber
             mainRoom.PostMessageLight($"GraveRobber started {currentVer}.");
 #endif
 
+            mainRoom.PostMessageLight("Initialising tracking tests...");
+
             shutdownMre.WaitOne();
             shutdownMre?.Dispose();
 
@@ -73,7 +79,7 @@ namespace GraveRobber
             mainRoom?.Leave();
             watchingRoom?.Leave();
             chatClient?.Dispose();
-            qProcessor?.Dispose();
+            qwPool?.Dispose();
 
             Console.WriteLine("\nShutdown complete.");
         }
@@ -82,41 +88,32 @@ namespace GraveRobber
 
         private static void InitialiseFromConfig()
         {
-            var cr = new ConfigReader();
-
-            if (!string.IsNullOrWhiteSpace(cr.AccountEmailAddressSecondary) &&
-                !string.IsNullOrWhiteSpace(cr.AccountPasswordSecondary))
+            if (!string.IsNullOrWhiteSpace(ConfigReader.AccountEmailAddressSecondary) &&
+                !string.IsNullOrWhiteSpace(ConfigReader.AccountPasswordSecondary))
             {
-                seLogin.SEOpenIDLogin(cr.AccountEmailAddressSecondary, cr.AccountPasswordSecondary);
+                seLogin.SEOpenIDLogin(ConfigReader.AccountEmailAddressSecondary, ConfigReader.AccountPasswordSecondary);
                 seLogin.SiteLogin("stackoverflow.com");
             }
         }
 
-        private static void StartQuestionProcessor()
+        private static void StartQuestionWatcherPool()
         {
-            var cr = new ConfigReader();
-            qProcessor = new QuestionProcessor(seLogin, cr.DataFilesDir);
-            qProcessor.SeriousDamnHappened = ex => Console.WriteLine(ex);
-            qProcessor.PostFound = qs =>
+            qChecker = new QuestionChecker(seLogin);
+            qwPool = new QuestionWatcherPool(qChecker, seLogin);
+            qwPool.OnException = ex => Console.WriteLine(ex);
+            qwPool.NewReport = report => mainRoom.PostMessageLight(report);
+            qwPool.HighErrorCountPerMinuteReached = errorsTotal =>
             {
-                Console.WriteLine($"\nINFO: QS reached event handler, diff: {qs.Difference}. \n Stack trace:\n{Environment.StackTrace}");
-                var msg = $"{Math.Round(qs.Difference * 100)}% changed: " +
-                          $"[question]({qs.Url}) (" +
-                          $"+{qs.UpvoteCount}/-{Math.Abs(qs.DownvoteCount)})" +
-                          (string.IsNullOrWhiteSpace(qs.CloseReqMessage) ?
-                            "" : 
-                            $" - [req]({qs.CloseReqMessage})");
-                mainRoom.PostMessageLight(msg);
+                mainRoom.PostMessageLight("High internal error rate detected. Shutting down...");
+                shutdownMre.Set();
             };
         }
 
         private static void JoinRooms()
         {
-            var cr = new ConfigReader();
+            chatClient = new Client(ConfigReader.AccountEmailAddressPrimary, ConfigReader.AccountPasswordPrimary);
 
-            chatClient = new Client(cr.AccountEmailAddressPrimary, cr.AccountPasswordPrimary);
-
-            mainRoom = chatClient.JoinRoom(cr.RoomUrl, true);
+            mainRoom = chatClient.JoinRoom(ConfigReader.RoomUrl, true);
             mainRoom.InitialisePrimaryContentOnly = true;
             mainRoom.StripMention = true;
             mainRoom.EventManager.ConnectListener(EventType.UserMentioned, new Action<Message>(HandleCommand));
@@ -125,11 +122,11 @@ namespace GraveRobber
             watchingRoom.InitialisePrimaryContentOnly = true;
             watchingRoom.EventManager.ConnectListener(EventType.MessageMovedIn, new Action<Message>(m =>
             {
-                var url = messageFetcher.GetPostUrl(m);
+                var id = messageFetcher.GetPostID(m);
 
-                if (!string.IsNullOrWhiteSpace(url))
+                if (id > 0)
                 {
-                    qProcessor.WatchPost(url, $"http://chat.{m.Host}/transcript/message/{m.ID}");
+                    qwPool.WatchPost(id, $"http://chat.{m.Host}/transcript/message/{m.ID}");
                 }
             }));
         }
@@ -150,15 +147,15 @@ namespace GraveRobber
             else if (cmd == "INIT" && (msg.Author.IsRoomOwner ||
                      msg.Author.IsMod || msg.Author.ID == 2246344))
             {
-                mainRoom.PostReplyLight(msg, "Working...");
+                mainRoom.PostReplyLight(msg, "Initialising...");
 
                 var ms = messageFetcher.GetRecentMessage(mainRoom, 500);
 
                 foreach (var m in ms)
                 {
-                    if (!string.IsNullOrWhiteSpace(m.Value))
+                    if (m.Value >= 0)
                     {
-                        qProcessor.WatchPost(m.Value, $"http://chat.{m.Key.Host}/transcript/message/{m.Key.ID}");
+                        qwPool.WatchPost(m.Value, $"http://chat.{m.Key.Host}/transcript/message/{m.Key.ID}");
                     }
                 }
 
@@ -174,16 +171,16 @@ namespace GraveRobber
             }
             else if (cmd == "STATS")
             {
-                var watchingQs = qProcessor.WatchedPosts;
+                var watchingQs = qwPool.WatchedPosts;
                 mainRoom.PostMessageLight($"I'm currently watching `{watchingQs}` post{(watchingQs == 1 ? "" : "s")}.");
             }
             else if (cmd.StartsWith("ALIVE"))
             {
-                mainRoom.PostReplyLight(msg, "What do you think?");
+                mainRoom.PostReplyLight(msg, "Yep.");
             }
             else if (cmd == "HELP")
             {
-                mainRoom.PostReplyLight(msg, "I'm (yet) another chatbot who lives in this room. I check up on all [tag:cv-pls] " +
+                mainRoom.PostReplyLight(msg, "I'm another chatbot who checks up on all your [tag:cv-pls] " +
                                             "requests to see if they warrant reopening (I'm not 100% accurate, so only take " +
                                             "my messages as *suggestions*). You can check out what I can do by using: " +
                                             "`commands`. My GH repo can be found " +
@@ -191,7 +188,8 @@ namespace GraveRobber
             }
             else if (cmd == "DIE")
             {
-                mainRoom.PostReplyLight(msg, "You need to be a room owner, moderator, or Sam to kill me.");
+                mainRoom.PostReplyLight(msg, "You need to be a room owner or moderator. " +
+                                             "Please contact your local Sam for further assistance.");
             }
         }
     }

@@ -1,6 +1,6 @@
 ﻿/*
  * GraveRobber. A .NET PoC program for fetching data from the SOCVR graveyards.
- * Copyright © 2015, ArcticEcho.
+ * Copyright © 2016, ArcticEcho.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,79 +21,140 @@
 
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using Jil;
 
 namespace GraveRobber
 {
-    public static class QuestionChecker
+    public class QuestionChecker : IDisposable
     {
         private const string revUrl = "http://stackoverflow.com/revisions/";
         private const RegexOptions regOpts = RegexOptions.Compiled | RegexOptions.CultureInvariant;
-        private static Regex postIDRegex = new Regex(@"(?i)q(uestions)?/(\d+)", regOpts);
-        private static Regex revsTableRegex = new Regex(@"(?s)(<table>.*?</table>)", regOpts);
-        private static Regex revRegex = new Regex("(?s)(<tr class=\"((vote|owner)-)?revision\".*?</tr>)", regOpts);
-        private static Regex closedRegex = new Regex("(?s)(<td class=.*<b>Post Closed</b>)", regOpts);
-        private static Regex reopenedRegex = new Regex("(?s)(<td class=.*<b>Post Reopened</b>)", regOpts);
-        private static Regex closeDateRegex = new Regex("(?i)<span title=\"(.*?)\" class=\"relativetime\">", regOpts);
-        private static Regex revIDRegex = new Regex("^<tr class=\"(owner-)?revision\">\\s+<td class=\"revcell1 vm\" onclick=\"StackExchange.revisions.toggle\\('([a-f0-9\\-]+)'\\)", regOpts);
-        private static Regex postUrlRegex = new Regex(@"(?i)^https?://stackoverflow.com/(q(uestions)?|a)\/(\d+)", regOpts);
+        private readonly ConcurrentDictionary<Action<QuestionStatus>, int> queue;
+        private readonly SELogin sel;
+        private readonly Regex postIDRegex = new Regex(@"(?i)q(uestions)?/(\d+)", regOpts);
+        private readonly Regex revsTableRegex = new Regex(@"(?s)(<table>.*?</table>)", regOpts);
+        private readonly Regex revRegex = new Regex("(?s)(<tr class=\"((vote|owner)-)?revision\".*?</tr>)", regOpts);
+        private readonly Regex closedRegex = new Regex("(?s)(<td class=.*<b>Post Closed</b>)", regOpts);
+        private readonly Regex reopenedRegex = new Regex("(?s)(<td class=.*<b>Post Reopened</b>)", regOpts);
+        private readonly Regex closeDateRegex = new Regex("(?i)<span title=\"(.*?)\" class=\"relativetime\">", regOpts);
+        private readonly Regex revIDRegex = new Regex("^<tr class=\"(owner-)?revision\">\\s+<td class=\"revcell1 vm\" onclick=\"StackExchange.revisions.toggle\\('([a-f0-9\\-]+)'\\)", regOpts);
+        private readonly Regex postUrlRegex = new Regex(@"(?i)^https?://stackoverflow.com/(q(uestions)?|a)\/(\d+)", regOpts);
+        private bool dispose;
 
 
 
-        public static QuestionStatus GetQuestionStatus(string url, SELogin seLogin)
+        public QuestionChecker(SELogin seLogin)
         {
-            if (string.IsNullOrWhiteSpace(url) || !postIDRegex.IsMatch(url)) return null;
+            sel = seLogin;
+            queue = new ConcurrentDictionary<Action<QuestionStatus>, int>();
 
-            var revs = GetRevisionsHtml(url);
+            Task.Run(() => ProcessQueue());
+        }
+
+        ~QuestionChecker()
+        {
+            Dispose();
+        }
+
+
+
+        public void Dispose()
+        {
+            if (dispose) return;
+            dispose = true;
+
+            GC.SuppressFinalize(this);
+        }
+
+        public QuestionStatus GetStatus(int postID)
+        {
+            using (var mre = new ManualResetEvent(false))
+            {
+                QuestionStatus status = null;
+
+                queue[new Action<QuestionStatus>(qs =>
+                {
+                    status = qs;
+                    mre.Set();
+                })] = postID;
+
+                mre.WaitOne();
+
+                return status;
+            }
+        }
+
+        public int GetPostIDFromURL(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return -1;
+
+            var id = -1;
+
+            return int.TryParse(postUrlRegex.Match(url).Groups[3].Value, out id) ? id : -1;
+        }
+
+
+
+        private void ProcessQueue()
+        {
+            var mre = new ManualResetEvent(false);
+
+            while (true)
+            {
+                mre.WaitOne(1000);
+
+                if (queue.IsEmpty) continue;
+
+                int qID;
+                var callback = queue.Keys.First();
+
+                queue.TryRemove(callback, out qID);
+
+                var qs = GetQuestionStatus(qID);
+
+                callback(qs);
+            }
+        }
+
+        private QuestionStatus GetQuestionStatus(int postID)
+        {
+            if (postID <= 0) return null;
+
+            var revs = GetRevisionsHtml(postID);
 
             if (revs == null) return null;
 
-            var postID = -1;
-            var trimmed = TrimUrl(url, out postID);
             var closeDate = ClosedAt(revs);
 
             if (closeDate == null) return null;
 
             var edited = EditedSinceClosure(revs);
             var diff = CalcDiff(revs, postID);
-            var votes = GetVotes(postID, seLogin);
+            var votes = GetVotes(postID);
 
             return new QuestionStatus
             {
-                Url = trimmed,
                 CloseDate = closeDate,
                 EditedSinceClosure = edited,
                 UpvoteCount = votes.Key,
                 DownvoteCount = votes.Value,
-                Difference = diff
+                Difference = diff,
+                PostID = postID
             };
         }
 
-        public static string TrimUrl(string url, out int postID)
-        {
-            postID = -1;
-            if (string.IsNullOrWhiteSpace(url)) return null;
-
-            if (!int.TryParse(postUrlRegex.Match(url).Groups[3].Value, out postID))
-            {
-                return null;
-            }
-
-            return $"http://stackoverflow.com/q/{postID}";
-        }
-
-
-
-        private static List<KeyValuePair<string, string>> GetRevisionsHtml(string url)
+        private List<KeyValuePair<string, string>> GetRevisionsHtml(int postID)
         {
             try
             {
-                var id = postIDRegex.Match(url).Groups[2].Value;
-                var revTable = new WebClient().DownloadString($"http://stackoverflow.com/posts/{id}/revisions");
+                var revTable = new WebClient().DownloadString($"http://stackoverflow.com/posts/{postID}/revisions");
                 revTable = revsTableRegex.Match(revTable).Groups[1].Value;
 
                 var revMatches = new List<Match>(revRegex.Matches(revTable).Cast<Match>());
@@ -113,7 +174,7 @@ namespace GraveRobber
             }
         }
 
-        private static float CalcDiff(List<KeyValuePair<string, string>> revs, int postID)
+        private float CalcDiff(List<KeyValuePair<string, string>> revs, int postID)
         {
             var wc = new WebClient();
             var closeIndex = -1;
@@ -174,12 +235,12 @@ namespace GraveRobber
             catch (Exception ex)
             {
                 // Probably hit a tag-only/title-only edit.
-                Console.Write($"\nERROR: an exception was thrown while calculating change difference for post {postID}: {ex.Message}");
+                Console.WriteLine(ex);
                 return -1;
             }
         }
 
-        private static DateTime? ClosedAt(List<KeyValuePair<string, string>> revs)
+        private DateTime? ClosedAt(List<KeyValuePair<string, string>> revs)
         {
             foreach (var rev in revs)
             {
@@ -198,13 +259,13 @@ namespace GraveRobber
             return null;
         }
 
-        private static KeyValuePair<int, int> GetVotes(int postID, SELogin seLogin)
+        private KeyValuePair<int, int> GetVotes(int postID)
         {
-            if (seLogin != null)
+            if (sel != null)
             {
                 try
                 {
-                    var res = seLogin.Get($"http://stackoverflow.com/posts/{postID}/vote-counts");
+                    var res = sel.Get($"http://stackoverflow.com/posts/{postID}/vote-counts");
                     var json = JSON.Deserialize<Dictionary<string, string>>(res);
                     var up = int.Parse(json["up"]);
                     var down = Math.Abs(int.Parse(json["down"]));
@@ -213,14 +274,14 @@ namespace GraveRobber
                 }
                 catch (Exception ex)
                 {
-                    Console.Write($"\nERROR: an exception was thrown while fetching vote data for post {postID}: {ex.Message}");
+                    Console.WriteLine(ex);
                 }
             }
 
             return default(KeyValuePair<int, int>);
         }
 
-        private static bool EditedSinceClosure(List<KeyValuePair<string, string>> revs)
+        private bool EditedSinceClosure(List<KeyValuePair<string, string>> revs)
         {
             var editCount = 0;
 

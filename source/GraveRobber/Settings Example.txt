@@ -1,10 +1,10 @@
-﻿﻿Note: you'll need to copy this file to the output directory of your compiler (and rename it to "settings.txt").
-(The secondary account must have over 1000 rep. Otherwise certain functionality will be disabled.)
-("DataFilesDir" can be left blank, unless you'd like to store the files else where.)
+﻿﻿Note: you'll need to copy this file to the output directory of your compiler (where the program's exe file is)
+and rename it to "settings.txt". (The secondary account must have over 1000 rep.
+Otherwise certain functionality will be disabled.)
 
-SE Email:mybelovedtrash@gmail.com
-SE Password:correct horse battery staple
+SE Email Primary:mybelovedtrash@gmail.com
+SE Password Primary:correct horse battery staple
 SE Email Secondary:morebelovedtrash@gmail.com
 SE Password Secondary:pr0b@bly @n @w350m3 p@55w0rd
 RoomURL:http://chat.stackoverflow.com/rooms/97558/discussion-about-what-to-do-with-the-cv-pls-requests
-DataFilesDir:
+DB Connection:Server=localhost;Username=MrWaffles;Password=r@1nb0wz;DataBase=GraveRobber

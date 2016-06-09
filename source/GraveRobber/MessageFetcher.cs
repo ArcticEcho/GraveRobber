@@ -1,6 +1,6 @@
 ﻿/*
  * GraveRobber. A .NET PoC program for fetching data from the SOCVR graveyards.
- * Copyright © 2015, ArcticEcho.
+ * Copyright © 2016, ArcticEcho.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -36,8 +36,8 @@ namespace GraveRobber
     {
         private const RegexOptions regOpts = RegexOptions.Compiled | RegexOptions.CultureInvariant;
         private readonly Regex cvplsMsg = new Regex(@"(?i)^←?\[tag:cv-?pl[zs]\].*https?://\S+?", regOpts);
-        private readonly Regex cvplsPostUrl = new Regex(@"(https?://stackoverflow\.com/q\S*?)(\s|\z)", regOpts);
-        private readonly Regex dupeReq = new Regex(@"(?i)cv-?pl[sz][^a-z0-9]+dup(e(licate)?)?.*https?://\S+", regOpts);
+        private readonly Regex cvplsPostUrl = new Regex(@"(https?://stackoverflow\.com/q(uestions)?/(\d+)\S*?)(\s|\z)", regOpts);
+        private readonly Regex dupeReq = new Regex(@"(?i)cv-?pl[sz].*dup((e)|(licate))?.*https?://stackoverflow\.com/q(uestions)?/(\d+)", regOpts);
         private readonly string fkey;
 
 
@@ -50,7 +50,7 @@ namespace GraveRobber
 
 
 
-        public Dictionary<Message, string> GetRecentMessage(Room room, int msgCount = 50)
+        public Dictionary<Message, int> GetRecentMessage(Room room, int msgCount = 50)
         {
             msgCount = Math.Max(10, Math.Min(500, msgCount));
 
@@ -64,7 +64,7 @@ namespace GraveRobber
 
             var json = JSON.Deserialize<Dictionary<string, object>>(jsonStr);
             var events = JSON.Deserialize<Dictionary<string, object>[]>(json["events"].ToString());
-            var msgs = new Dictionary<Message, string>();
+            var msgs = new Dictionary<Message, int>();
 
             foreach (var m in events)
             {
@@ -76,23 +76,24 @@ namespace GraveRobber
                 Thread.Sleep(1000);
 
                 var message = room[id];
-                msgs[message] = GetPostUrl(message);
+                msgs[message] = GetPostID(message);
             }
 
             return msgs;
         }
 
-        public string GetPostUrl(Message message)
+        public int GetPostID(Message message)
         {
+            var id = -1;
+
             if (cvplsMsg.IsMatch(message.Content) && !dupeReq.IsMatch(message.Content))
             {
-                var postUrl = cvplsPostUrl.Match(message.Content).Groups[1].Value.Trim();
-                postUrl = postUrl.EndsWith(")") ? postUrl.Substring(0, postUrl.Length - 1) : postUrl;
+                var idStr = cvplsPostUrl.Match(message.Content).Groups[3].Value;
 
-                return postUrl;
+                if (!int.TryParse(idStr, out id)) { }
             }
 
-            return null;
+            return id;
         }
     }
 }
