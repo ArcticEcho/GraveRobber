@@ -32,5 +32,6 @@ namespace GraveRobber
         public int UpvoteCount { get; set; }
         public int DownvoteCount { get; set; }
         public float Difference { get; set; }
+        public int[] ClosedBy { get; set; }
     }
 }

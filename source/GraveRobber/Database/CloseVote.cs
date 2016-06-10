@@ -31,6 +31,5 @@ namespace GraveRobber.Database
         public int ID { get; set; }
         public int UserID { get; set; }
         public int PostID { get; set; }
-        public DateTime Timestamp { get; set; }
     }
 }

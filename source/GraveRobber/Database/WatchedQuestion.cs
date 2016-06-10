@@ -33,6 +33,6 @@ namespace GraveRobber.Database
         public DateTime CloseDate { get; set; }
         public int CVPlsMessageID { get; set; }
         public int CVPlsIssuerUserID { get; set; }
-        public virtual ICollection<User> CloseVoters { get; set; }
+        public virtual ICollection<CloseVote> CloseVotes { get; set; }
     }
 }

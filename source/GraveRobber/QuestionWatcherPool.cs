@@ -29,6 +29,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ChatExchangeDotNet;
 using GraveRobber.Database;
+using Microsoft.Data.Entity;
 using Npgsql;
 
 namespace GraveRobber
@@ -217,7 +218,6 @@ namespace GraveRobber
                         // Ignore the post as it is either open or deleted.
                         if (qs?.CloseDate == null) continue;
 
-                        //TODO: Save the IDs of all users who closed the question.
                         db.WatchedQuestions.Add(new WatchedQuestion
                         {
                             PostID = qs.PostID,
@@ -225,6 +225,16 @@ namespace GraveRobber
                             CVPlsMessageID = postIDByCVPlseUrl.Value,
                             CVPlsIssuerUserID = Program.GetChatMessageAuthor(postIDByCVPlseUrl.Value).ID
                         });
+
+                        foreach (var uID in qs.ClosedBy)
+                        {
+                            db.CVs.Add(new CloseVote
+                            {
+                                PostID = qs.PostID,
+                                UserID = uID
+                            });
+                        }
+
                         db.SaveChanges();
 
                         if (QSMatchesCriteria(qs))
@@ -270,7 +280,9 @@ namespace GraveRobber
         {
             using (var db = new DB())
             {
-                var wq = db.WatchedQuestions.Single(x => x.PostID == qs.PostID);
+                var wq = db.WatchedQuestions
+                    .Include(x => x.CloseVotes)
+                    .Single(x => x.PostID == qs.PostID);
                 var report = GenerateReport(wq, qs);
 
                 RemoveWatchedPost(qs.PostID);
@@ -307,12 +319,13 @@ namespace GraveRobber
                     msg.AppendPing(Program.GetChatUser(wq.CVPlsIssuerUserID));
                 }
 
-                var usersToNotif = wq.CloseVoters
-                    .Where(cver => cver.UserID != wq.CVPlsIssuerUserID &&
-                        db.NotifUsers.Any(notifUser => notifUser.UserID == cver.UserID));
+                var usersToNotif = wq.CloseVotes
+                    .Where(cver => db.NotifUsers.Any(notifUser => notifUser.UserID == cver.UserID));
 
                 foreach (var u in usersToNotif)
                 {
+                    if (u.UserID == wq.CVPlsIssuerUserID) continue;
+
                     msg.AppendPing(Program.GetChatUser(u.UserID));
                 }
             }

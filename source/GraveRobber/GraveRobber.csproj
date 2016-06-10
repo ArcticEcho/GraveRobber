@@ -164,7 +164,6 @@
     <Compile Include="QuestionWatcher.cs" />
     <Compile Include="Database\WatchedQuestion.cs" />
     <Compile Include="SELogin.cs" />
-    <Compile Include="Database\User.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

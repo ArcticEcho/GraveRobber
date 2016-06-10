@@ -46,6 +46,7 @@ namespace GraveRobber
         private readonly Regex closeDateRegex = new Regex("(?i)<span title=\"(.*?)\" class=\"relativetime\">", regOpts);
         private readonly Regex revIDRegex = new Regex("^<tr class=\"(owner-)?revision\">\\s+<td class=\"revcell1 vm\" onclick=\"StackExchange.revisions.toggle\\('([a-f0-9\\-]+)'\\)", regOpts);
         private readonly Regex postUrlRegex = new Regex(@"(?i)^https?://stackoverflow.com/(q(uestions)?|a)\/(\d+)", regOpts);
+        private readonly Regex closedByRegex = new Regex(@"/users/(\d+)", regOpts);
         private bool dispose;
 
 
@@ -138,6 +139,7 @@ namespace GraveRobber
             var edited = EditedSinceClosure(revs);
             var diff = CalcDiff(revs, postID);
             var votes = GetVotes(postID);
+            var cvers = ClosedBy(revs);
 
             return new QuestionStatus
             {
@@ -146,7 +148,8 @@ namespace GraveRobber
                 UpvoteCount = votes.Key,
                 DownvoteCount = votes.Value,
                 Difference = diff,
-                PostID = postID
+                PostID = postID,
+                ClosedBy = cvers
             };
         }
 
@@ -279,6 +282,27 @@ namespace GraveRobber
             }
 
             return default(KeyValuePair<int, int>);
+        }
+
+        private int[] ClosedBy(List<KeyValuePair<string, string>> revs)
+        {
+            var cvers = new List<int>();
+
+            foreach (var rev in revs)
+            {
+                if (closedRegex.IsMatch(rev.Value))
+                {
+                    foreach (Match m in closedByRegex.Matches(rev.Value))
+                    {
+                        var userID = int.Parse(m.Groups[1].Value);
+                        cvers.Add(userID);
+                    }
+
+                    break;
+                }
+            }
+
+            return cvers.ToArray();
         }
 
         private bool EditedSinceClosure(List<KeyValuePair<string, string>> revs)
