@@ -115,10 +115,18 @@ namespace GraveRobber
             try
             {
                 var outter = JSON.Deserialize<Dictionary<string, object>>(msg);
-                var inner = JSON.Deserialize<Dictionary<string, object>>(outter["data"].ToString());
+
+                if (outter.ContainsKey("action") && outter["action"].ToString() == "\"hb\"")
+                {
+                    return;
+                }
+
+                var data = outter["data"].ToString().Replace("\\\"", "\"");
+                data = data.Substring(1, data.Length - 2);
+                var inner = JSON.Deserialize<Dictionary<string, object>>(data);
 
                 if (inner.ContainsKey("a") && inner.ContainsKey("id") &&
-                    (string)inner["a"] == "post-edit" && (string)inner["id"] == ID.ToString() &&
+                    inner["a"].ToString() == "\"post-edit\"" && inner["id"].ToString() == ID.ToString() &&
                     QuestionEdited != null)
                 {
                     QuestionEdited();

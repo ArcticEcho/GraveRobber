@@ -152,6 +152,7 @@
   <ItemGroup>
     <Compile Include="ConfigReader.cs" />
     <Compile Include="Database\CloseVote.cs" />
+    <Compile Include="Database\NotifUser.cs" />
     <Compile Include="LevenshteinDistance.cs" />
     <Compile Include="Database\DB.cs" />
     <Compile Include="MessageFetcher.cs" />

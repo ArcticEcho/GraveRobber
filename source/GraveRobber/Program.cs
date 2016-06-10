@@ -22,6 +22,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using ChatExchangeDotNet;
@@ -29,7 +30,7 @@ using GraveRobber.Database;
 
 namespace GraveRobber
 {
-    class Program
+    public static class Program
     {
         private static readonly ManualResetEvent shutdownMre = new ManualResetEvent(false);
         private static readonly MessageFetcher messageFetcher = new MessageFetcher();
@@ -56,10 +57,10 @@ namespace GraveRobber
 
             Console.Write("Authenticating...");
             InitialiseFromConfig();
-            Console.Write("done.\nInitialising question watcher pool...");
-            StartQuestionWatcherPool();
             Console.Write("done.\nJoining chat room(s)...");
             JoinRooms();
+            Console.Write("done.\nInitialising question watcher pool...");
+            StartQuestionWatcherPool();
 
 #if DEBUG
             Console.WriteLine("done.\nGraveRobber started (debug).");
@@ -69,7 +70,7 @@ namespace GraveRobber
             mainRoom.PostMessageLight($"GraveRobber started {currentVer}.");
 #endif
 
-            mainRoom.PostMessageLight("Initialising tracking tests...");
+            Console.WriteLine();
 
             shutdownMre.WaitOne();
             shutdownMre?.Dispose();
@@ -82,6 +83,16 @@ namespace GraveRobber
             qwPool?.Dispose();
 
             Console.WriteLine("\nShutdown complete.");
+        }
+
+        public static ChatExchangeDotNet.User GetChatUser(int userID)
+        {
+            return mainRoom.GetUser(userID);
+        }
+
+        public static ChatExchangeDotNet.User GetChatMessageAuthor(int messageID)
+        {
+            return mainRoom[messageID].Author;
         }
 
 
@@ -118,7 +129,7 @@ namespace GraveRobber
             mainRoom.StripMention = true;
             mainRoom.EventManager.ConnectListener(EventType.UserMentioned, new Action<Message>(HandleCommand));
 
-            watchingRoom = chatClient.JoinRoom("http://chat.stackoverflow.com/rooms/90230/cv-request-graveyard", true);//("http://chat.stackoverflow.com/rooms/68414/socvr-testing-facility", true);//
+            watchingRoom = chatClient.JoinRoom("http://chat.stackoverflow.com/rooms/68414/socvr-testing-facility", true);//("http://chat.stackoverflow.com/rooms/68414/socvr-testing-facility", true);//
             watchingRoom.InitialisePrimaryContentOnly = true;
             watchingRoom.EventManager.ConnectListener(EventType.MessageMovedIn, new Action<Message>(m =>
             {
@@ -126,7 +137,7 @@ namespace GraveRobber
 
                 if (id > 0)
                 {
-                    qwPool.WatchPost(id, $"http://chat.{m.Host}/transcript/message/{m.ID}");
+                    qwPool.WatchPost(id, m.ID);
                 }
             }));
         }
@@ -155,7 +166,7 @@ namespace GraveRobber
                 {
                     if (m.Value >= 0)
                     {
-                        qwPool.WatchPost(m.Value, $"http://chat.{m.Key.Host}/transcript/message/{m.Key.ID}");
+                        qwPool.WatchPost(m.Value, m.Key.ID);
                     }
                 }
 
@@ -163,11 +174,14 @@ namespace GraveRobber
             }
             else if (cmd == "COMMANDS")
             {
-                mainRoom.PostMessageLight("    commands ~ ~ ~ ~ ~ ~ ~ Prints this beautifully formatted message.\n" +
-                                          "    stats  ~ ~ ~ ~ ~ ~ ~ ~ Displays the number of posts being watched.\n" +
-                                          "    help ~ ~ ~ ~ ~ ~ ~ ~ ~ Pretty self-explanatory...\n" +
-                                          "    alive  ~ ~ ~ ~ ~ ~ ~ ~ Checks if I'm still running.\n" +
-                                          "    die  ~ ~ ~ ~ ~ ~ ~ ~ ~ I die a slow and painful death.");
+                mainRoom.PostMessageLight("    commands - Prints this beautifully formatted message.\n" +
+                                          "    stats    - Displays the number of posts being watched.\n" +
+                                          "    opt-in   - You will receive pings for questions you have\n" +
+                                          "               issued a cv-pls request on or voted to close.\n" +
+                                          "    opt-out  - Disables the above feature.\n" +
+                                          "    help     - Pretty self-explanatory...\n" +
+                                          "    alive    - Checks if I'm still running.\n" +
+                                          "    die      - I die a slow and painful death.");
             }
             else if (cmd == "STATS")
             {
@@ -177,6 +191,14 @@ namespace GraveRobber
             else if (cmd.StartsWith("ALIVE"))
             {
                 mainRoom.PostReplyLight(msg, "Yep.");
+            }
+            else if (cmd == "OPT-IN" || cmd == "OPTIN")
+            {
+                OptInToNotifs(msg);
+            }
+            else if (cmd == "OPT-OUT" || cmd == "OPTOUT")
+            {
+                OptOutFromNotifs(msg);
             }
             else if (cmd == "HELP")
             {
@@ -190,6 +212,46 @@ namespace GraveRobber
             {
                 mainRoom.PostReplyLight(msg, "You need to be a room owner or moderator. " +
                                              "Please contact your local Sam for further assistance.");
+            }
+        }
+
+        private static void OptInToNotifs(Message msg)
+        {
+            using (var db = new DB())
+            {
+                if (db.NotifUsers.Any(x => x.UserID == msg.Author.ID))
+                {
+                    mainRoom.PostReplyLight(msg, "You're already opted in. Duh.");
+                }
+                else
+                {
+                    db.NotifUsers.Add(new NotifUser
+                    {
+                        UserID = msg.Author.ID
+                    });
+                    db.SaveChanges();
+                    mainRoom.PostReplyLight(msg, "Opt-in successful.");
+                }
+            }
+        }
+
+        private static void OptOutFromNotifs(Message msg)
+        {
+            using (var db = new DB())
+            {
+                var user = db.NotifUsers.SingleOrDefault(x => x.UserID == msg.Author.ID);
+
+                if (user != null)
+                {
+                    db.NotifUsers.Remove(user);
+                    db.SaveChanges();
+
+                    mainRoom.PostReplyLight(msg, "Opt-out successful.");
+                }
+                else
+                {
+                    mainRoom.PostReplyLight(msg, "You're already outed out. Duh.");
+                }
             }
         }
     }

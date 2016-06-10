@@ -32,7 +32,5 @@ namespace GraveRobber.Database
         public int UserID { get; set; }
         public int PostID { get; set; }
         public DateTime Timestamp { get; set; }
-        public virtual User User { get; set; }
-        public virtual WatchedQuestion Question { get; set; }
     }
 }

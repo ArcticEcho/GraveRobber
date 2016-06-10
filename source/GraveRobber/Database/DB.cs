@@ -27,7 +27,7 @@ namespace GraveRobber.Database
     public partial class DB : DbContext
     {
         public DbSet<WatchedQuestion> WatchedQuestions { get; set; }
-        public DbSet<User> Users { get; set; }
+        public DbSet<NotifUser> NotifUsers { get; set; }
         public DbSet<CloseVote> CVs { get; set; }
 
 

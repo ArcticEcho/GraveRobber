@@ -31,8 +31,8 @@ namespace GraveRobber.Database
         [Key]
         public int PostID { get; set; }
         public DateTime CloseDate { get; set; }
-        public string CVPlsMessageUrl { get; set; }
-        public virtual User CVPlsIssuer { get; set; }
+        public int CVPlsMessageID { get; set; }
+        public int CVPlsIssuerUserID { get; set; }
         public virtual ICollection<User> CloseVoters { get; set; }
     }
 }

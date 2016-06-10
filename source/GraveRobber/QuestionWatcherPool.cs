@@ -37,7 +37,7 @@ namespace GraveRobber
     {
         private readonly ManualResetEvent grimReaperMre;
         private readonly ConcurrentDictionary<int, QuestionWatcher> watchers;
-        private readonly ConcurrentQueue<KeyValuePair<int, string>> queuedPostIDs;
+        private readonly ConcurrentQueue<KeyValuePair<int, int>> queuedPostIDs;
         private readonly SELogin seLogin;
         private readonly QuestionChecker qChkr;
         private uint errorCount;
@@ -68,7 +68,7 @@ namespace GraveRobber
             qChkr = qChecker;
             seLogin = login;
             watchers = new ConcurrentDictionary<int, QuestionWatcher>();
-            queuedPostIDs = new ConcurrentQueue<KeyValuePair<int, string>>();
+            queuedPostIDs = new ConcurrentQueue<KeyValuePair<int, int>>();
             grimReaperMre = new ManualResetEvent(false);
 
             Task.Run(() => PopulateWatchers());
@@ -84,9 +84,9 @@ namespace GraveRobber
 
 
 
-        public void WatchPost(int postID, string cvplsReqUrl)
+        public void WatchPost(int postID, int cvplsReqMessageID)
         {
-            queuedPostIDs.Enqueue(new KeyValuePair<int, string>(postID, cvplsReqUrl));
+            queuedPostIDs.Enqueue(new KeyValuePair<int, int>(postID, cvplsReqMessageID));
         }
 
         public void Dispose()
@@ -134,8 +134,6 @@ namespace GraveRobber
             {
                 foreach (var q in db.WatchedQuestions)
                 {
-                    Thread.Sleep(5000);
-
                     var qs = qChkr.GetStatus(q.PostID);
 
                     if (qs?.CloseDate != null)
@@ -198,16 +196,15 @@ namespace GraveRobber
 
         private void ProcessNewUrlsQueue()
         {
-            var postIDByCVPlseUrl = new KeyValuePair<int, string>();
+            var postIDByCVPlseUrl = new KeyValuePair<int, int>();
 
             using (var db = new DB())
             {
-                Thread.Sleep(15000);
                 while (!dispose)
                 {
                     try
                     {
-                        Thread.Sleep(1000);
+                        Thread.Sleep(500);
 
                         if (dispose || queuedPostIDs.IsEmpty) continue;
 
@@ -220,22 +217,23 @@ namespace GraveRobber
                         // Ignore the post as it is either open or deleted.
                         if (qs?.CloseDate == null) continue;
 
+                        //TODO: Save the IDs of all users who closed the question.
+                        db.WatchedQuestions.Add(new WatchedQuestion
+                        {
+                            PostID = qs.PostID,
+                            CloseDate = (DateTime)qs?.CloseDate,
+                            CVPlsMessageID = postIDByCVPlseUrl.Value,
+                            CVPlsIssuerUserID = Program.GetChatMessageAuthor(postIDByCVPlseUrl.Value).ID
+                        });
+                        db.SaveChanges();
+
                         if (QSMatchesCriteria(qs))
                         {
                             HandleEditedQuestion(qs);
                         }
                         else
                         {
-                            //TODO: Save the user ID of who issued the cv-pls + uses IDs of all users
-                            // who closed the question.
-                            db.WatchedQuestions.Add(new WatchedQuestion
-                            {
-                                PostID = qs.PostID,
-                                CloseDate = (DateTime)qs?.CloseDate,
-                                CVPlsMessageUrl = postIDByCVPlseUrl.Value
-                            });
                             watchers[qs.PostID] = CreateWatcher(qs.PostID);
-                            db.SaveChanges();
                         }
                     }
                     catch (Exception ex)
@@ -251,7 +249,7 @@ namespace GraveRobber
         {
             return new QuestionWatcher(id)
             {
-                OnException = ex => 
+                OnException = ex =>
                 {
                     errorCount++;
                     OnException?.Invoke(ex);
@@ -293,10 +291,28 @@ namespace GraveRobber
             msg.AppendLink($"question", qLink);
             msg.AppendText($" (+{qs.UpvoteCount}/-{qs.DownvoteCount})");
 
-            if (!string.IsNullOrWhiteSpace(wq.CVPlsMessageUrl))
+            if (wq.CVPlsMessageID > 0)
             {
+                var reqLink = $"http://chat.stackoverflow.com/transcript/message/{wq.CVPlsMessageID}";
                 msg.AppendText(" - ");
-                msg.AppendLink("req", wq.CVPlsMessageUrl);
+                msg.AppendLink("req", reqLink);
+            }
+
+            msg.AppendText(" ");
+
+            using (var db = new DB())
+            {
+                if (db.NotifUsers.Any(x => x.UserID == wq.CVPlsIssuerUserID))
+                {
+                    msg.AppendPing(Program.GetChatUser(wq.CVPlsIssuerUserID));
+                }
+
+                var usersToNotif = wq.CloseVoters.Where(cver => db.NotifUsers.Any(notifUser => notifUser.UserID == cver.UserID));
+
+                foreach (var u in usersToNotif)
+                {
+                    msg.AppendPing(Program.GetChatUser(u.UserID));
+                }
             }
 
             return msg.ToString();
