@@ -52,7 +52,7 @@ namespace GraveRobber
 
 
 
-        public QuestionWatcherPool(QuestionChecker qChecker, SELogin login, string dataFilesDir = null)
+        public QuestionWatcherPool(QuestionChecker qChecker, string dataFilesDir = null)
         {
             if (qChecker == null)
             {
@@ -65,7 +65,6 @@ namespace GraveRobber
             }
 
             qChkr = qChecker;
-            seLogin = login;
             watchers = new ConcurrentDictionary<int, QuestionWatcher>();
             queuedPostIDs = new ConcurrentQueue<KeyValuePair<int, int>>();
             grimReaperMre = new ManualResetEvent(false);

@@ -110,7 +110,7 @@ namespace GraveRobber
         private static void StartQuestionWatcherPool()
         {
             qChecker = new QuestionChecker(seLogin);
-            qwPool = new QuestionWatcherPool(qChecker, seLogin);
+            qwPool = new QuestionWatcherPool(qChecker);
             qwPool.OnException = ex => Console.WriteLine(ex);
             qwPool.NewReport = report => mainRoom.PostMessageLight(report);
             qwPool.HighErrorCountPerMinuteReached = errorsTotal =>
