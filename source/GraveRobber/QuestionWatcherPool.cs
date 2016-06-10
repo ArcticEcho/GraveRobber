@@ -307,7 +307,9 @@ namespace GraveRobber
                     msg.AppendPing(Program.GetChatUser(wq.CVPlsIssuerUserID));
                 }
 
-                var usersToNotif = wq.CloseVoters.Where(cver => db.NotifUsers.Any(notifUser => notifUser.UserID == cver.UserID));
+                var usersToNotif = wq.CloseVoters
+                    .Where(cver => cver.UserID != wq.CVPlsIssuerUserID &&
+                        db.NotifUsers.Any(notifUser => notifUser.UserID == cver.UserID));
 
                 foreach (var u in usersToNotif)
                 {
