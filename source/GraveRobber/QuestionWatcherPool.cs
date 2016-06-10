@@ -30,7 +30,6 @@ using System.Threading.Tasks;
 using ChatExchangeDotNet;
 using GraveRobber.Database;
 using Microsoft.Data.Entity;
-using Npgsql;
 
 namespace GraveRobber
 {
@@ -39,7 +38,6 @@ namespace GraveRobber
         private readonly ManualResetEvent grimReaperMre;
         private readonly ConcurrentDictionary<int, QuestionWatcher> watchers;
         private readonly ConcurrentQueue<KeyValuePair<int, int>> queuedPostIDs;
-        private readonly SELogin seLogin;
         private readonly QuestionChecker qChkr;
         private uint errorCount;
         private bool dispose;
@@ -192,7 +190,6 @@ namespace GraveRobber
                     grimReaperMre.WaitOne(TimeSpan.FromMinutes(5));
                 }
             }
-
         }
 
         private void ProcessNewUrlsQueue()

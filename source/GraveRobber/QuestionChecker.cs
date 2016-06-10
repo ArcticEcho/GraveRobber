@@ -38,7 +38,6 @@ namespace GraveRobber
         private const RegexOptions regOpts = RegexOptions.Compiled | RegexOptions.CultureInvariant;
         private readonly ConcurrentDictionary<Action<QuestionStatus>, int> queue;
         private readonly SELogin sel;
-        private readonly Regex postIDRegex = new Regex(@"(?i)q(uestions)?/(\d+)", regOpts);
         private readonly Regex revsTableRegex = new Regex(@"(?s)(<table>.*?</table>)", regOpts);
         private readonly Regex revRegex = new Regex("(?s)(<tr class=\"((vote|owner)-)?revision\".*?</tr>)", regOpts);
         private readonly Regex closedRegex = new Regex("(?s)(<td class=.*<b>Post Closed</b>)", regOpts);

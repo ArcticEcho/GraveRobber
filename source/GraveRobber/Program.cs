@@ -85,12 +85,12 @@ namespace GraveRobber
             Console.WriteLine("\nShutdown complete.");
         }
 
-        public static ChatExchangeDotNet.User GetChatUser(int userID)
+        public static User GetChatUser(int userID)
         {
             return mainRoom.GetUser(userID);
         }
 
-        public static ChatExchangeDotNet.User GetChatMessageAuthor(int messageID)
+        public static User GetChatMessageAuthor(int messageID)
         {
             return mainRoom[messageID].Author;
         }
@@ -129,7 +129,7 @@ namespace GraveRobber
             mainRoom.StripMention = true;
             mainRoom.EventManager.ConnectListener(EventType.UserMentioned, new Action<Message>(HandleCommand));
 
-            watchingRoom = chatClient.JoinRoom("http://chat.stackoverflow.com/rooms/68414/socvr-testing-facility", true);//("http://chat.stackoverflow.com/rooms/68414/socvr-testing-facility", true);//
+            watchingRoom = chatClient.JoinRoom("http://chat.stackoverflow.com/rooms/90230/cv-request-graveyard", true);
             watchingRoom.InitialisePrimaryContentOnly = true;
             watchingRoom.EventManager.ConnectListener(EventType.MessageMovedIn, new Action<Message>(m =>
             {
@@ -203,14 +203,14 @@ namespace GraveRobber
             else if (cmd == "HELP")
             {
                 mainRoom.PostReplyLight(msg, "I'm another chatbot who checks up on all your [tag:cv-pls] " +
-                                            "requests to see if they warrant reopening (I'm not 100% accurate, so only take " +
-                                            "my messages as *suggestions*). You can check out what I can do by using: " +
-                                            "`commands`. My GH repo can be found " +
-                                            "[here](https://github.com/SO-Close-Vote-Reviewers/GraveRobber).");
+                                             "requests to see if they warrant reopening (I'm not 100% accurate, so only take " +
+                                             "my messages as *suggestions*). You can check out what I can do by using: " +
+                                             "`commands`. My GH repo can be found " +
+                                             "[here](https://github.com/SO-Close-Vote-Reviewers/GraveRobber).");
             }
             else if (cmd == "DIE")
             {
-                mainRoom.PostReplyLight(msg, "You need to be a room owner or moderator. " +
+                mainRoom.PostReplyLight(msg, "You must be a room owner or moderator to kill. " +
                                              "Please contact your local Sam for further assistance.");
             }
         }
