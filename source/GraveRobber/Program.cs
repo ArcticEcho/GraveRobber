@@ -210,7 +210,7 @@ namespace GraveRobber
             }
             else if (cmd == "DIE")
             {
-                mainRoom.PostReplyLight(msg, "You must be a room owner or moderator to kill. " +
+                mainRoom.PostReplyLight(msg, "You must be a room owner or moderator to kill me. " +
                                              "Please contact your local Sam for further assistance.");
             }
         }
