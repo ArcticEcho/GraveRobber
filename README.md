@@ -4,7 +4,7 @@ GraveRobber is a small project which aims to help the SOCVR in finding potential
 
 Example report: 
 
-> 74% changed: [question](http://stackoverflow.com/q/35267717) (+1/-8) - [req](http://chat.stackoverflow.com/transcript/message/28628733)
+> [63%](http://stackoverflow.com/posts/37751828/revisions) changed: [question](http://stackoverflow.com/q/37751828) (+0/-2) - [req](http://chat.stackoverflow.com/transcript/message/31085758)
 
 -----
 
