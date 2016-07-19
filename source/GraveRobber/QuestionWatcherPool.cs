@@ -87,6 +87,14 @@ namespace GraveRobber
             queuedPostIDs.Enqueue(new KeyValuePair<int, int>(postID, cvplsReqMessageID));
         }
 
+        public bool IsPostWatched(int postID)
+        {
+            using (var db = new DB())
+            {
+                return db.WatchedQuestions.Any(x => x.PostID == postID);
+            }
+        }
+
         public void Dispose()
         {
             if (dispose) return;
@@ -310,6 +318,13 @@ namespace GraveRobber
 
             using (var db = new DB())
             {
+                var m = db.ManualReportNotifUsers.SingleOrDefault(x => x.PostID == wq.PostID);
+                if (m != null)
+                {
+                    msg.AppendPing(Program.GetChatUser(m.UserID));
+                    db.ManualReportNotifUsers.Remove(m);
+                }
+
                 if (db.NotifUsers.Any(x => x.UserID == wq.CVPlsIssuerUserID))
                 {
                     msg.AppendPing(Program.GetChatUser(wq.CVPlsIssuerUserID));

@@ -35,6 +35,7 @@ namespace GraveRobber
         private static readonly ManualResetEvent shutdownMre = new ManualResetEvent(false);
         private static readonly MessageFetcher messageFetcher = new MessageFetcher();
         private static readonly SELogin seLogin = new SELogin();
+        private static readonly UserResponses ur = new UserResponses();
         private static QuestionWatcherPool qwPool;
         private static QuestionChecker qChecker;
         private static Client chatClient;
@@ -174,14 +175,16 @@ namespace GraveRobber
             }
             else if (cmd == "COMMANDS")
             {
-                mainRoom.PostMessageLight("    commands - Prints this beautifully formatted message.\n" +
-                                          "    stats    - Displays the number of posts being watched.\n" +
-                                          "    opt-in   - You will receive pings for questions you have\n" +
-                                          "               issued a cv-pls request on or voted to close.\n" +
-                                          "    opt-out  - Disables the above feature.\n" +
-                                          "    help     - Pretty self-explanatory...\n" +
-                                          "    alive    - Checks if I'm still running.\n" +
-                                          "    die      - I die a slow and painful death.");
+                mainRoom.PostMessageLight("    commands   - Prints this beautifully formatted message.\n" +
+                                          "    stats      - Displays the number of posts being watched.\n" +
+                                          "    opt-in     - You will receive pings for questions you have\n" +
+                                          "                 issued a cv-pls request on or voted to close.\n" +
+                                          "    opt-out    - Disables the above feature.\n" +
+                                          "    watch <id> - Manually adds a (closed) question to the\n" +
+                                          "                 watch list.\n" +
+                                          "    help       - Pretty self-explanatory...\n" +
+                                          "    alive      - Checks if I'm still running.\n" +
+                                          "    die        - I die a slow and painful death.");
             }
             else if (cmd == "STATS")
             {
@@ -200,6 +203,10 @@ namespace GraveRobber
             {
                 OptOutFromNotifs(msg);
             }
+            else if (cmd.StartsWith("WATCH "))
+            {
+                WatchQuestion(msg);
+            }
             else if (cmd == "HELP")
             {
                 mainRoom.PostReplyLight(msg, "I'm another chatbot who checks up on all your [tag:cv-pls] " +
@@ -213,6 +220,58 @@ namespace GraveRobber
                 mainRoom.PostReplyLight(msg, "You must be a room owner or moderator to kill me. " +
                                              "Please contact your local Sam for further assistance.");
             }
+        }
+
+        private static void WatchQuestion(Message msg)
+        {
+            var split = msg.Content.Split(' ');
+            var id = -1;
+
+            if (split.Length != 2) return;
+
+            if (!int.TryParse(split[1], out id))
+            {
+                var urlSplit = split[1].Split('/');
+
+                if (urlSplit.Length < 5) return;
+
+                if (urlSplit[2] != "stackoverflow.com" || !int.TryParse(urlSplit[4], out id)) return;
+
+                if (urlSplit[3] == "users")
+                {
+                    mainRoom.PostReplyLight(msg, ur[id]);
+                    return;
+                }
+            }
+
+            var qs = qChecker.GetStatus(id);
+
+            if (qs == null)
+            {
+                mainRoom.PostReplyLight(msg, "The specified ID/URL does not point to a closed question.");
+                return;
+            }
+
+            if (qwPool.IsPostWatched(id))
+            {
+                mainRoom.PostReplyLight(msg, "This question is already being watched.");
+                return;
+            }
+
+            qwPool.WatchPost(id, msg.ID);
+
+            using (var db = new DB())
+            {
+                db.ManualReportNotifUsers.Add(new NotifUserManualReport
+                {
+                    PostID = id,
+                    UserID = msg.Author.ID
+                });
+
+                db.SaveChanges();
+            }
+
+            mainRoom.PostReplyLight(msg, $"Now watching question {id}, you will be notified when this post is edited.");
         }
 
         private static void OptInToNotifs(Message msg)

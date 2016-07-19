@@ -152,6 +152,7 @@
     <Compile Include="ConfigReader.cs" />
     <Compile Include="Database\CloseVote.cs" />
     <Compile Include="Database\NotifUser.cs" />
+    <Compile Include="Database\NotifUserManualReport.cs" />
     <Compile Include="LevenshteinDistance.cs" />
     <Compile Include="Database\DB.cs" />
     <Compile Include="MessageFetcher.cs" />
@@ -163,6 +164,7 @@
     <Compile Include="QuestionWatcher.cs" />
     <Compile Include="Database\WatchedQuestion.cs" />
     <Compile Include="SELogin.cs" />
+    <Compile Include="UserResponses.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

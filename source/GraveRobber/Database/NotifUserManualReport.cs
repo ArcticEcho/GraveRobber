@@ -20,22 +20,14 @@
 
 
 
-using Microsoft.Data.Entity;
+using System.ComponentModel.DataAnnotations;
 
 namespace GraveRobber.Database
 {
-    public partial class DB : DbContext
+    public class NotifUserManualReport
     {
-        public DbSet<WatchedQuestion> WatchedQuestions { get; set; }
-        public DbSet<NotifUser> NotifUsers { get; set; }
-        public DbSet<NotifUserManualReport> ManualReportNotifUsers { get; set; }
-        public DbSet<CloseVote> CVs { get; set; }
-
-
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseNpgsql(ConfigReader.DBConnection);
-        }
+        [Key]
+        public int PostID { get; set; }
+        public int UserID { get; set; }
     }
 }
