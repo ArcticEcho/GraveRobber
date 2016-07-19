@@ -175,16 +175,16 @@ namespace GraveRobber
             }
             else if (cmd == "COMMANDS")
             {
-                mainRoom.PostMessageLight("    commands   - Prints this beautifully formatted message.\n" +
-                                          "    stats      - Displays the number of posts being watched.\n" +
-                                          "    opt-in     - You will receive pings for questions you have\n" +
-                                          "                 issued a cv-pls request on or voted to close.\n" +
-                                          "    opt-out    - Disables the above feature.\n" +
-                                          "    watch <id> - Manually adds a (closed) question to the\n" +
-                                          "                 watch list.\n" +
-                                          "    help       - Pretty self-explanatory...\n" +
-                                          "    alive      - Checks if I'm still running.\n" +
-                                          "    die        - I die a slow and painful death.");
+                mainRoom.PostMessageLight("    commands       - Prints this beautifully formatted message.\n" +
+                                          "    stats          - Displays the number of posts being watched.\n" +
+                                          "    opt-in         - You will receive pings for questions you have\n" +
+                                          "                     issued a cv-pls request on or voted to close.\n" +
+                                          "    opt-out        - Disables the above feature.\n" +
+                                          "    watch <id/url> - Manually adds a (closed) question to the\n" +
+                                          "                     watch list (you can pass the post's ID or URL).\n" +
+                                          "    help           - Pretty self-explanatory...\n" +
+                                          "    alive          - Checks if I'm still running.\n" +
+                                          "    die            - I die a slow and painful death.");
             }
             else if (cmd == "STATS")
             {
