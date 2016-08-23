@@ -29,6 +29,7 @@ namespace GraveRobber
         public int PostID { get; set; }
         public DateTime? CloseDate { get; set; }
         public bool EditedSinceClosure { get; set; }
+        public int LastestRevID { get; set; }
         public int UpvoteCount { get; set; }
         public int DownvoteCount { get; set; }
         public float Difference { get; set; }

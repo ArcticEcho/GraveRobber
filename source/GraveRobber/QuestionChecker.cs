@@ -36,7 +36,7 @@ namespace GraveRobber
     {
         private const string revUrl = "http://stackoverflow.com/revisions/";
         private const RegexOptions regOpts = RegexOptions.Compiled | RegexOptions.CultureInvariant;
-        private readonly ConcurrentDictionary<Action<QuestionStatus>, int> queue;
+        private readonly ConcurrentDictionary<Action<QuestionStatus>, QueuedQSReq> queue;
         private readonly SELogin sel;
         private readonly Regex revsTableRegex = new Regex(@"(?s)(<table>.*?</table>)", regOpts);
         private readonly Regex revRegex = new Regex("(?s)(<tr class=\"((vote|owner)-)?revision\".*?</tr>)", regOpts);
@@ -53,7 +53,7 @@ namespace GraveRobber
         public QuestionChecker(SELogin seLogin)
         {
             sel = seLogin;
-            queue = new ConcurrentDictionary<Action<QuestionStatus>, int>();
+            queue = new ConcurrentDictionary<Action<QuestionStatus>, QueuedQSReq>();
 
             Task.Run(() => ProcessQueue());
         }
@@ -73,7 +73,7 @@ namespace GraveRobber
             GC.SuppressFinalize(this);
         }
 
-        public QuestionStatus GetStatus(int postID)
+        public QuestionStatus GetStatus(int postID, int fromRev = 0)
         {
             using (var mre = new ManualResetEvent(false))
             {
@@ -83,7 +83,11 @@ namespace GraveRobber
                 {
                     status = qs;
                     mre.Set();
-                })] = postID;
+                })] = new QueuedQSReq
+                {
+                    PostID = postID,
+                    FromRev = fromRev
+                };
 
                 mre.WaitOne();
 
@@ -112,22 +116,22 @@ namespace GraveRobber
 
                 if (queue.IsEmpty) continue;
 
-                int qID;
+                QueuedQSReq qqs;
                 var callback = queue.Keys.First();
 
-                queue.TryRemove(callback, out qID);
+                queue.TryRemove(callback, out qqs);
 
-                var qs = GetQuestionStatus(qID);
+                var qs = GetQuestionStatus(qqs);
 
                 callback(qs);
             }
         }
 
-        private QuestionStatus GetQuestionStatus(int postID)
+        private QuestionStatus GetQuestionStatus(QueuedQSReq qqs)
         {
-            if (postID <= 0) return null;
+            if (qqs.PostID <= 0) return null;
 
-            var revs = GetRevisionsHtml(postID);
+            var revs = GetRevisionsHtml(qqs.PostID);
 
             if (revs == null) return null;
 
@@ -136,8 +140,9 @@ namespace GraveRobber
             if (closeDate == null) return null;
 
             var edited = EditedSinceClosure(revs);
-            var diff = CalcDiff(revs, postID);
-            var votes = GetVotes(postID);
+            var latestRevID = -1;
+            var diff = CalcDiff(revs, qqs.FromRev, out latestRevID);
+            var votes = GetVotes(qqs.PostID);
             var cvers = ClosedBy(revs);
 
             return new QuestionStatus
@@ -147,8 +152,9 @@ namespace GraveRobber
                 UpvoteCount = votes.Key,
                 DownvoteCount = votes.Value,
                 Difference = diff,
-                PostID = postID,
-                ClosedBy = cvers
+                PostID = qqs.PostID,
+                ClosedBy = cvers,
+                LastestRevID = latestRevID
             };
         }
 
@@ -176,68 +182,85 @@ namespace GraveRobber
             }
         }
 
-        private float CalcDiff(List<KeyValuePair<string, string>> revs, int postID)
+        /// <summary>
+        /// Calculates the difference between two post's revisions.
+        /// </summary>
+        /// <param name="fromRevInv">The inversed index at which the starting revision is located at.</param>
+        /// <param name="latestRevInv">The inversed index of the post's latest revision.</param>
+        /// <returns></returns>
+        private float CalcDiff(List<KeyValuePair<string, string>> revs, int fromRevInv, out int latestRevInv)
         {
             var wc = new WebClient();
-            var closeIndex = -1;
-            var revIdBeforeClose = -1;
-            var latestRevI = -1;
+            var closeID = -1;
+            var startRev = -1; // Typically the revision before closure.
+            var endRev = -1;   // Normally the latest revision.
 
             for (var i = 0; i < revs.Count; i++)
             {
-                if (closedRegex.IsMatch(revs[i].Value) && closeIndex == -1)
+                if (closedRegex.IsMatch(revs[i].Value) && closeID == -1)
                 {
-                    closeIndex = i;
+                    closeID = i;
                 }
-                if (revIDRegex.IsMatch(revs[i].Value) && latestRevI == -1)
+
+                if (endRev == -1)
                 {
                     try
                     {
                         wc.DownloadString($"{revUrl}{revs[i].Key}/view-source");
-                        latestRevI = i;
+                        endRev = i;
                     }
                     catch
                     {
-                        latestRevI = -1;
+                        endRev = -1;
                     }
                 }
 
-                if (closeIndex != -1 && latestRevI != -1) break;
+                if (closeID != -1 && endRev != -1) break;
             }
 
-            for (var i = closeIndex + 1; i < revs.Count; i++)
+            if (fromRevInv <= 0)
             {
-                if (revIDRegex.IsMatch(revs[i].Value))
+                for (var i = closeID + 1; i < revs.Count; i++)
                 {
-                    try
+                    if (revIDRegex.IsMatch(revs[i].Value))
                     {
-                        wc.DownloadString($"{revUrl}{revs[i].Key}/view-source");
-                        revIdBeforeClose = i;
-                        break;
+                        try
+                        {
+                            wc.DownloadString($"{revUrl}{revs[i].Key}/view-source");
+                            startRev = i;
+                            break;
+                        }
+                        catch { }
                     }
-                    catch { }
                 }
             }
-
-            if (closeIndex == -1 || latestRevI == -1 ||
-                revIdBeforeClose == -1 || latestRevI == revIdBeforeClose)
+            else
             {
+                startRev = revs.Count - fromRevInv;
+            }
+
+            if (closeID == -1 || endRev == -1 ||
+                startRev == -1 || endRev == startRev)
+            {
+                latestRevInv = revs.Count - endRev;
                 return -1;
             }
 
             try
             {
-                var latestUrl = $"{revUrl}{revs[latestRevI].Key}/view-source";
-                var urlBeforeClose = $"{revUrl}{revs[revIdBeforeClose].Key}/view-source";
-                var latestRev = wc.DownloadString(latestUrl);
-                var revBeforeClose = wc.DownloadString(urlBeforeClose);
+                latestRevInv = revs.Count - endRev;
+                var startRevUrl = $"{revUrl}{revs[startRev].Key}/view-source";
+                var endRevUrl = $"{revUrl}{revs[endRev].Key}/view-source";
+                var startRevSource = wc.DownloadString(startRevUrl);
+                var endRevSource = wc.DownloadString(endRevUrl);
 
-                return LevenshteinDistance.Calculate(revBeforeClose, latestRev, int.MaxValue) / Math.Max((float)revBeforeClose.Length, latestRev.Length);
+                return LevenshteinDistance.Calculate(startRevSource, endRevSource, int.MaxValue) / Math.Max((float)startRevSource.Length, endRevSource.Length);
             }
             catch (Exception ex)
             {
                 // Probably hit a tag-only/title-only edit.
                 Console.WriteLine(ex);
+                latestRevInv = -1;
                 return -1;
             }
         }
@@ -322,10 +345,7 @@ namespace GraveRobber
                     return editCount > 0;
                 }
 
-                if (reopenedRegex.IsMatch(rev.Value))
-                {
-                    return false;
-                }
+                if (reopenedRegex.IsMatch(rev.Value)) break;
             }
 
             return false;

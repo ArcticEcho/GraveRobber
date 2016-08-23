@@ -29,5 +29,6 @@ namespace GraveRobber.Database
         [Key]
         public int PostID { get; set; }
         public int UserID { get; set; }
+        public int FromRevNo { get; set; }
     }
 }

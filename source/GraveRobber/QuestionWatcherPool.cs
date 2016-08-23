@@ -37,7 +37,7 @@ namespace GraveRobber
     {
         private readonly ManualResetEvent grimReaperMre;
         private readonly ConcurrentDictionary<int, QuestionWatcher> watchers;
-        private readonly ConcurrentQueue<KeyValuePair<int, int>> queuedPostIDs;
+        private readonly ConcurrentQueue<QueuedQwpItem> queuedPostIDs;
         private readonly QuestionChecker qChkr;
         private uint errorCount;
         private bool dispose;
@@ -66,7 +66,7 @@ namespace GraveRobber
 
             qChkr = qChecker;
             watchers = new ConcurrentDictionary<int, QuestionWatcher>();
-            queuedPostIDs = new ConcurrentQueue<KeyValuePair<int, int>>();
+            queuedPostIDs = new ConcurrentQueue<QueuedQwpItem>();
             grimReaperMre = new ManualResetEvent(false);
 
             Task.Run(() => PopulateWatchers());
@@ -82,9 +82,14 @@ namespace GraveRobber
 
 
 
-        public void WatchPost(int postID, int cvplsReqMessageID)
+        public void WatchPost(int postID, int cvplsReqMessageID, bool reportIfOverThreshold = true)
         {
-            queuedPostIDs.Enqueue(new KeyValuePair<int, int>(postID, cvplsReqMessageID));
+            queuedPostIDs.Enqueue(new QueuedQwpItem
+            {
+                PostID = postID,
+                ActionRequestMessageID = cvplsReqMessageID,
+                ReportIfOverThreshold = reportIfOverThreshold
+            });
         }
 
         public bool IsPostWatched(int postID)
@@ -140,19 +145,32 @@ namespace GraveRobber
             {
                 foreach (var q in db.WatchedQuestions)
                 {
-                    var qs = qChkr.GetStatus(q.PostID);
-
-                    if (qs?.CloseDate != null)
+                    using (var dbManualCheck = new DB())
                     {
-                        if (QSMatchesCriteria(qs))
+                        QuestionStatus qs = null;
+                        var m = dbManualCheck.ManualReportNotifUsers.SingleOrDefault(x => x.PostID == q.PostID);
+
+                        if (m != null)
                         {
-                            var report = GenerateReport(q, qs);
-                            NewReport?.Invoke(report);
-                            RemoveWatchedPost(qs.PostID);
-                            continue;
+                            qChkr.GetStatus(q.PostID, m.FromRevNo);
+                        }
+                        else
+                        {
+                            qs = qChkr.GetStatus(q.PostID);
                         }
 
-                        watchers[q.PostID] = CreateWatcher(qs.PostID);
+                        if (qs?.CloseDate != null)
+                        {
+                            if (QSMatchesCriteria(qs))
+                            {
+                                var report = GenerateReport(q, qs);
+                                NewReport?.Invoke(report);
+                                RemoveWatchedPost(qs.PostID);
+                                continue;
+                            }
+
+                            watchers[q.PostID] = CreateWatcher(qs.PostID);
+                        }
                     }
                 }
             }
@@ -201,7 +219,7 @@ namespace GraveRobber
 
         private void ProcessNewUrlsQueue()
         {
-            var postIDByCVPlseUrl = new KeyValuePair<int, int>();
+            var queuedPost = new QueuedQwpItem();
 
             using (var db = new DB())
             {
@@ -213,11 +231,14 @@ namespace GraveRobber
 
                         if (dispose || queuedPostIDs.IsEmpty) continue;
 
-                        queuedPostIDs.TryDequeue(out postIDByCVPlseUrl);
+                        queuedPostIDs.TryDequeue(out queuedPost);
 
-                        if (db.WatchedQuestions.Any(x => x.PostID == postIDByCVPlseUrl.Key)) continue;
+                        if (db.WatchedQuestions.Any(x => x.PostID == queuedPost.PostID))
+                        {
+                            continue;
+                        }
 
-                        var qs = qChkr.GetStatus(postIDByCVPlseUrl.Key);
+                        var qs = qChkr.GetStatus(queuedPost.PostID);
 
                         // Ignore the post as it is either open or deleted.
                         if (qs?.CloseDate == null) continue;
@@ -226,8 +247,8 @@ namespace GraveRobber
                         {
                             PostID = qs.PostID,
                             CloseDate = (DateTime)qs?.CloseDate,
-                            CVPlsMessageID = postIDByCVPlseUrl.Value,
-                            CVPlsIssuerUserID = Program.GetChatMessageAuthor(postIDByCVPlseUrl.Value).ID
+                            CVPlsMessageID = queuedPost.ActionRequestMessageID,
+                            CVPlsIssuerUserID = Program.GetChatMessageAuthor(queuedPost.ActionRequestMessageID).ID
                         });
 
                         foreach (var uID in qs.ClosedBy)
@@ -241,7 +262,7 @@ namespace GraveRobber
 
                         db.SaveChanges();
 
-                        if (QSMatchesCriteria(qs))
+                        if (queuedPost.ReportIfOverThreshold && QSMatchesCriteria(qs))
                         {
                             HandleEditedQuestion(qs);
                         }
@@ -270,11 +291,25 @@ namespace GraveRobber
                 },
                 QuestionEdited = () =>
                 {
-                    var status = qChkr.GetStatus(id);
-
-                    if (QSMatchesCriteria(status))
+                    using (var db = new DB())
                     {
-                        HandleEditedQuestion(status);
+                        QuestionStatus status;
+
+                        var m = db.ManualReportNotifUsers.SingleOrDefault(x => x.PostID == id);
+
+                        if (m != null)
+                        {
+                            status = qChkr.GetStatus(id, m.FromRevNo);
+                        }
+                        else
+                        {
+                            status = qChkr.GetStatus(id);
+                        }
+
+                        if (QSMatchesCriteria(status))
+                        {
+                            HandleEditedQuestion(status);
+                        }
                     }
                 }
             };
@@ -318,27 +353,31 @@ namespace GraveRobber
 
             using (var db = new DB())
             {
+                var usersToNotif = new List<int>();
                 var m = db.ManualReportNotifUsers.SingleOrDefault(x => x.PostID == wq.PostID);
                 if (m != null)
                 {
-                    msg.AppendPing(Program.GetChatUser(m.UserID));
+                    usersToNotif.Add(m.UserID);
                     db.ManualReportNotifUsers.Remove(m);
                 }
 
                 if (db.NotifUsers.Any(x => x.UserID == wq.CVPlsIssuerUserID))
                 {
-                    msg.AppendPing(Program.GetChatUser(wq.CVPlsIssuerUserID));
+                    usersToNotif.Add(wq.CVPlsIssuerUserID);
                 }
 
-                var usersToNotif = wq.CloseVotes
-                    .Where(cver => db.NotifUsers.Any(notifUser => notifUser.UserID == cver.UserID));
+                usersToNotif
+                    .AddRange(wq.CloseVotes
+                        .Select(x => x.UserID)
+                        .Where(cver => db.NotifUsers
+                            .Any(notifUser => notifUser.UserID == cver)));
 
-                foreach (var u in usersToNotif)
+                foreach (var u in usersToNotif.Distinct())
                 {
-                    if (u.UserID == wq.CVPlsIssuerUserID) continue;
-
-                    msg.AppendPing(Program.GetChatUser(u.UserID));
+                    msg.AppendPing(Program.GetChatUser(u));
                 }
+
+                db.SaveChanges();
             }
 
             return msg.ToString();

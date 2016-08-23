@@ -258,14 +258,15 @@ namespace GraveRobber
                 return;
             }
 
-            qwPool.WatchPost(id, msg.ID);
+            qwPool.WatchPost(id, msg.ID, false);
 
             using (var db = new DB())
             {
                 db.ManualReportNotifUsers.Add(new NotifUserManualReport
                 {
                     PostID = id,
-                    UserID = msg.Author.ID
+                    UserID = msg.Author.ID,
+                    FromRevNo = qs.LastestRevID
                 });
 
                 db.SaveChanges();
