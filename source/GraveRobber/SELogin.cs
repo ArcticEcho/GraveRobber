@@ -208,7 +208,7 @@ namespace GraveRobber
                 }
                 else
                 {
-                    throw;
+                    throw new WebException("Failed to get response.", ex);
                 }
             }
 

@@ -239,8 +239,7 @@ namespace GraveRobber
                 startRev = revs.Count - fromRevInv;
             }
 
-            if (closeID == -1 || endRev == -1 ||
-                startRev == -1 || endRev == startRev)
+            if (closeID == -1 || endRev == -1 || startRev == -1)
             {
                 latestRevInv = revs.Count - endRev;
                 return -1;
