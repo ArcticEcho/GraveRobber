@@ -142,15 +142,15 @@ namespace GraveRobber
             var edited = EditedSinceClosure(revs);
             var latestRevID = -1;
             var diff = CalcDiff(revs, qqs.FromRev, out latestRevID);
-            var votes = GetVotes(qqs.PostID);
+            //var votes = GetVotes(qqs.PostID);
             var cvers = ClosedBy(revs);
 
             return new QuestionStatus
             {
                 CloseDate = closeDate,
                 EditedSinceClosure = edited,
-                UpvoteCount = votes.Key,
-                DownvoteCount = votes.Value,
+                //UpvoteCount = votes.Key,
+                //DownvoteCount = votes.Value,
                 Difference = diff,
                 PostID = qqs.PostID,
                 ClosedBy = cvers,
@@ -283,27 +283,27 @@ namespace GraveRobber
             return null;
         }
 
-        private KeyValuePair<int, int> GetVotes(int postID)
-        {
-            if (sel != null)
-            {
-                try
-                {
-                    var res = sel.Get($"http://stackoverflow.com/posts/{postID}/vote-counts");
-                    var json = JSON.Deserialize<Dictionary<string, string>>(res);
-                    var up = int.Parse(json["up"]);
-                    var down = Math.Abs(int.Parse(json["down"]));
+        //private KeyValuePair<int, int> GetVotes(int postID)
+        //{
+        //    if (sel != null)
+        //    {
+        //        try
+        //        {
+        //            var res = sel.Get($"http://stackoverflow.com/posts/{postID}/vote-counts");
+        //            var json = JSON.Deserialize<Dictionary<string, string>>(res);
+        //            var up = int.Parse(json["up"]);
+        //            var down = Math.Abs(int.Parse(json["down"]));
 
-                    return new KeyValuePair<int, int>(up, down);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                }
-            }
+        //            return new KeyValuePair<int, int>(up, down);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Console.WriteLine(ex);
+        //        }
+        //    }
 
-            return default(KeyValuePair<int, int>);
-        }
+        //    return default(KeyValuePair<int, int>);
+        //}
 
         private int[] ClosedBy(List<KeyValuePair<string, string>> revs)
         {

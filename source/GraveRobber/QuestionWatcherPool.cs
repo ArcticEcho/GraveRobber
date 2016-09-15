@@ -340,7 +340,7 @@ namespace GraveRobber
             msg.AppendLink($"{percentage}%", revLink);
             msg.AppendText(" changed: ");
             msg.AppendLink($"question", qLink);
-            msg.AppendText($" (+{qs.UpvoteCount}/-{qs.DownvoteCount})");
+            //msg.AppendText($" (+{qs.UpvoteCount}/-{qs.DownvoteCount})");
 
             if (wq.CVPlsMessageID > 0)
             {
