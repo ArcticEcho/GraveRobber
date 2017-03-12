@@ -36,7 +36,7 @@ namespace GraveRobber
         private static readonly MessageFetcher messageFetcher = new MessageFetcher();
         private static readonly SELogin seLogin = new SELogin();
         private static readonly UserResponses ur = new UserResponses();
-        private static SlackChat slackChat;
+        //private static SlackChat slackChat;
         private static QuestionWatcherPool qwPool;
         private static QuestionChecker qChecker;
         private static Client chatClient;
@@ -61,6 +61,8 @@ namespace GraveRobber
             InitialiseFromConfig();
             Console.Write("done.\nJoining SO chat rooms...");
             JoinRooms();
+            //Console.Write("done.\nJoining Slack channel...");
+            //JoinSlack();
             Console.Write("done.\nInitialising question watcher pool...");
             StartQuestionWatcherPool();
 
@@ -122,6 +124,12 @@ namespace GraveRobber
             };
         }
 
+        //private static void JoinSlack()
+        //{
+        //    var apiKey = ConfigReader.SlackApiKey;
+        //    var channel = ConfigReader.SlackChannelName;
+        //    slackChat = new SlackChat(apiKey);
+        //}
 
         private static void JoinRooms()
         {
