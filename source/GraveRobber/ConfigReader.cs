@@ -99,28 +99,6 @@ namespace GraveRobber
         }
 
         /// <summary>
-        /// The slack channel this bot will join to post meta notifications.
-        /// </summary>
-        public static string SlackChannelName
-        {
-            get
-            {
-                return GetSetting("SLACK_CHANNEL_NAME", "SlackChannelName");
-            }
-        }
-
-        /// <summary>
-        /// The slack API key used to log this bot in.
-        /// </summary>
-        public static string SlackApiKey
-        {
-            get
-            {
-                return GetSetting("SLACK_API_KEY", "SlackApiKey");
-            }
-        }
-
-        /// <summary>
         /// Attempts to find the config value based on the given key names.
         /// The first check will be at environment variables.
         /// The second check will be at the static settings file.
