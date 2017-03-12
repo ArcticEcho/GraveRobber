@@ -8,3 +8,5 @@ SE Email Secondary:morebelovedtrash@gmail.com
 SE Password Secondary:pr0b@bly @n @w350m3 p@55w0rd
 RoomURL:http://chat.stackoverflow.com/rooms/97558/discussion-about-what-to-do-with-the-cv-pls-requests
 DB Connection:Server=localhost;Username=MrWaffles;Password=r@1nb0wz;DataBase=GraveRobber
+SlackApiKey:abcd1234
+SlackChannelName:#general

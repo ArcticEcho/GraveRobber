@@ -112,7 +112,7 @@ namespace GraveRobber
 
             while (true)
             {
-                mre.WaitOne(1000);
+                mre.WaitOne(2000);
 
                 if (queue.IsEmpty) continue;
 
