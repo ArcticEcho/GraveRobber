@@ -5,7 +5,3 @@ GraveRobber is a small project which aims to help the SOCVR in finding potential
 Example report: 
 
 > [63%](http://stackoverflow.com/posts/37751828/revisions) changed: [question](http://stackoverflow.com/q/37751828) (+0/-2) - [req](http://chat.stackoverflow.com/transcript/message/31085758)
-
------
-
-For instructions on running this program in docker, refer to the comments in the [docker-compose.yml.example](/docker-compose.yml.example) file.
