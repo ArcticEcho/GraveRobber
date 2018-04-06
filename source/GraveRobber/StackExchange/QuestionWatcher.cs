@@ -59,6 +59,7 @@ namespace GraveRobber.StackExchange
 
 			if (data == "hb")
 			{
+				ws.Send("{\"action\":\"hb\",\"data\":\"hb\"}");
 				return;
 			}
 
