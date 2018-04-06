@@ -33,7 +33,7 @@ namespace GraveRobber.StackExchange.Chat
 
 
 
-		private void HandleMention(Message msg, User pinger)
+		private void HandleMention(Message msg)
 		{
 			var cmd = pingRemover
 				.Replace(msg.Text, "")
@@ -42,7 +42,7 @@ namespace GraveRobber.StackExchange.Chat
 
 			if (cmd == "DIE" || cmd == "STOP")
 			{
-				Kill(msg, pinger);
+				Kill(msg);
 			}
 			else if (cmd == "STATS")
 			{
@@ -58,7 +58,7 @@ namespace GraveRobber.StackExchange.Chat
 			}
 			else if (cmd == "ALIVE")
 			{
-				actionScheduler.CreateMessage($":{msg.Id} Let me think about that for a moment...");
+				actionScheduler.CreateReply("Let me think about that for a moment...", msg);
 			}
 			else if (cmd == "QUOTA")
 			{
@@ -70,18 +70,20 @@ namespace GraveRobber.StackExchange.Chat
 		{
 			if (Program.apiClient.QuotaRemaining < 1)
 			{
-				actionScheduler.CreateMessage($":{msg.Id} I'm totally out of requests. :(");
+				actionScheduler.CreateReply("I'm totally out of requests. :(", msg);
 			}
 			else
 			{
 				var reqs = Program.apiClient.QuotaRemaining.ToString("N0");
 
-				actionScheduler.CreateMessage($":{msg.Id} I only have {reqs} requests left :/");
+				actionScheduler.CreateReply($"I only have {reqs} requests left :/", msg);
 			}
 		}
 
-		private void Kill(Message msg, User pinger)
+		private void Kill(Message msg)
 		{
+			var pinger = new User(msg.Host, msg.AuthorId);
+
 			if (pinger.IsModerator || pinger.Owns.Any(x => x.Id == roomWatcher.RoomId))
 			{
 				actionScheduler.CreateMessage("See you guys in the next timeline o/");
@@ -89,20 +91,20 @@ namespace GraveRobber.StackExchange.Chat
 			}
 			else
 			{
-				actionScheduler.CreateMessage($":{msg.Id} Puny mortal, only room owners and moderators can kill me! :P");
+				actionScheduler.CreateReply("Puny mortal, only room owners and moderators can kill me! :P", msg);
 			}
 		}
 
 		private void PrintStats(Message msg)
 		{
-			var txt = $":{msg.Id} I'm currently watching {Program.WatchedQuestions} question";
+			var txt = $"I'm currently watching {Program.WatchedQuestions} question";
 
 			if (Program.WatchedQuestions != 1)
 			{
 				txt += "s";
 			}
 
-			actionScheduler.CreateMessage(txt + ".");
+			actionScheduler.CreateReply(txt + ".", msg);
 		}
 
 		private void PrintCommands(Message msg)
