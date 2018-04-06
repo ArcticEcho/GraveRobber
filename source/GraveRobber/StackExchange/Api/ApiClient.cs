@@ -30,6 +30,9 @@ namespace GraveRobber.StackExchange.Api
 			}
 
 			apiKey = key;
+
+			// Initialise QuotaRemaining.
+			GetQuestionVotes(1);
 		}
 
 

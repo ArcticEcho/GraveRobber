@@ -22,11 +22,11 @@ namespace GraveRobber
 		private static object lck;
 		private static ManualResetEvent shutdownMre;
 		private static Dictionary<DateTime, QuestionWatcher> qWatchers;
-		private static ApiClient apiClient;
 		private static ActionScheduler actionScheduler;
 
 		public static int WatchedQuestions => qWatchers.Count;
 
+		public static ApiClient apiClient { get; private set; }
 
 		public static void Main(string[] args)
 		{

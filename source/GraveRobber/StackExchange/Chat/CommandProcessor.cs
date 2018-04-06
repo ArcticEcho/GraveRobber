@@ -60,6 +60,24 @@ namespace GraveRobber.StackExchange.Chat
 			{
 				actionScheduler.CreateMessage($":{msg.Id} Let me think about that for a moment...");
 			}
+			else if (cmd == "QUOTA")
+			{
+				PrintQuota(msg);
+			}
+		}
+
+		private void PrintQuota(Message msg)
+		{
+			if (Program.apiClient.QuotaRemaining < 1)
+			{
+				actionScheduler.CreateMessage($":{msg.Id} I'm totally out of requests. :(");
+			}
+			else
+			{
+				var reqs = Program.apiClient.QuotaRemaining.ToString("N0");
+
+				actionScheduler.CreateMessage($":{msg.Id} I only have {reqs} requests left :/");
+			}
 		}
 
 		private void Kill(Message msg, User pinger)
@@ -91,13 +109,14 @@ namespace GraveRobber.StackExchange.Chat
 		{
 			var txt =
 				"    commands       - Prints this beautifully formatted message.\n" +
-				"    stats          - Displays the number of posts being watched.\n" +
+				"    stats          - Prints how many questions I'm watching.\n" +
 				"    opt-in         - Coming soon...\n" +
 				"    opt-out        - Coming soon...\n" +
 				"    watch <id/url> - Coming soon...\n" +
-				"    help           - I tell you a little story about what I do.\n" +
-				"    alive          - Checks if I'm still running.\n" +
-				"    die/stop       - I die a slow and painful death.";
+				"    help           - A little story about what I do.\n" +
+				"    alive          - Checks if I'm still up and running.\n" +
+				"    quota          - Prints how many API requests I have left.\n" +
+				"    die/stop       - A slow and painful death await...";
 
 			actionScheduler.CreateMessage(txt);
 		}
