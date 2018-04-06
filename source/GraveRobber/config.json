@@ -1,0 +1,14 @@
+﻿{
+	"StackExchange": {
+		"Chat": {
+			"RoomUrl": "https://chat.stackoverflow.com/rooms/41570/so-close-vote-reviewers",
+			"Email": "",
+			"Password": ""
+		},
+		"API": {
+			"Key": ""
+		}
+	},
+	"Threshold": 0.2,
+	"CloseRequestPattern": "^(?:\\[tag:)?cv\\-pl(?:[sz]|ease).*?https?:\\/\\/stackoverflow\\.com\\/q(?:uestions)?\\/(\\d+)(?:.*?https?:\\/\\/stackoverflow.com\\/users\\/(\\d+))?"
+}
