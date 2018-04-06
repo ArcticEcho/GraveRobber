@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Newtonsoft.Json.Linq;
 using StackExchange.Net;
 
@@ -12,8 +13,8 @@ namespace GraveRobber.StackExchange.Api
 		private const string configSitePath = "StackExchange.API.Site";
 		private const string apiBase = "https://api.stackexchange.com/2.2";
 		private const string site = "stackoverflow";
-		private const string getQVotesFilter = "!gB66oJbvnc.1s1XXtluzRd(OnQ5m5Au0b4.";
-		private const string getRevsFilter = "!SepxnddeDZz1SIgZSJ";
+		private const string getQVotesFilter = "!*l7us2fz-S8HPZwSFBU-fRyB";
+		private const string getRevsFilter = "!*l8)qoY*PPz*he2OK5zotf37";
 		private readonly string apiKey;
 
 		public int QuotaRemaining { get; private set; } = -1;
@@ -112,6 +113,15 @@ namespace GraveRobber.StackExchange.Api
 			var obj = JObject.Parse(json);
 
 			QuotaRemaining = obj.Value<int>("quota_remaining");
+
+			var wait = obj.Value<int?>("backoff");
+
+			if (wait != null)
+			{
+				Thread.Sleep(wait.Value * 1000);
+
+				return GetJson(endpoint);
+			}
 
 			if (obj["items"] == null)
 			{

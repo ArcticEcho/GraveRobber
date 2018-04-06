@@ -126,10 +126,11 @@ namespace GraveRobber.StackExchange.Chat
 		private void PrintHelp(Message msg)
 		{
 			var txt = $":{msg.Id} " +
-				"I'm a chatbot who checks up on all your [tag:cv-pls] " +
-				"requests to see if they warrant reopening (I'm not 100% accurate, so only take " +
-				"my reports as *suggestions*). You can check out what I can do by using: " +
-				"`commands`. My GH repo can be found " +
+				"I'm a chatbot that monitors [tag:cv-pls] requests to see if they " +
+				"warrant reopening. I post reports when a question receives a " +
+				"non-trivial edit; where 'non-trivial' is defined by calculating " +
+				"the Damerau-Levenshtein distance between revisions. You can check" +
+				" out what I can do by using: `commands`. My repository can be found " +
 				"[here](https://github.com/SO-Close-Vote-Reviewers/GraveRobber).";
 
 			actionScheduler.CreateMessage(txt);
