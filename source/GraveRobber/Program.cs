@@ -11,6 +11,7 @@ using GraveRobber.StackExchange.Chat;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StackExchange.Auth;
+using StackExchange.Chat;
 using StackExchange.Chat.Actions;
 using StackExchange.Net;
 
@@ -18,21 +19,18 @@ namespace GraveRobber
 {
 	public static class Program
 	{
-		private const string savedQsPath = "saved-qs.json";
-		private static object lck;
 		private static ManualResetEvent shutdownMre;
-		private static Dictionary<DateTime, QuestionWatcher> qWatchers;
+		private static HashSet<QuestionWatcher> watchers;
 		private static ActionScheduler actionScheduler;
 
-		public static int WatchedQuestions => qWatchers.Count;
+		public static int WatchedQuestions => watchers.Count;
 
 		public static ApiClient apiClient { get; private set; }
 
 		public static void Main(string[] args)
 		{
-			lck = new object();
 			shutdownMre = new ManualResetEvent(false);
-			qWatchers = new Dictionary<DateTime, QuestionWatcher>();
+			watchers = new HashSet<QuestionWatcher>();
 
 			Console.Write("Initialising SE API client...");
 
@@ -60,7 +58,7 @@ namespace GraveRobber
 
 			Console.Write("done\nLoading watched questions...");
 
-			LoadQs();
+			InitialiseWatchers();
 
 			Console.Write("done\n\nSetup complete. Press CTRL + C to quit.\n\n");
 			actionScheduler.CreateMessage("GraveRobber started.");
@@ -71,55 +69,25 @@ namespace GraveRobber
 			Console.Write("\nStopping...\n\n");
 
 			actionScheduler.Dispose();
-			foreach (var qw in qWatchers)
+			foreach (var qw in watchers)
 			{
-				qw.Value.Dispose();
+				qw.Dispose();
 			}
 		}
 
 
-		private static void LoadQs()
+		private static void InitialiseWatchers()
 		{
-			if (!File.Exists(savedQsPath))
+			var reqs = CloseRequestStore.Requests;
+
+			watchers = new HashSet<QuestionWatcher>(reqs.Select(x =>
 			{
-				return;
-			}
+				var qw = new QuestionWatcher(x.QuestionId);
 
-			var json = File.ReadAllText(savedQsPath);
-
-			var typeDef = new[]
-			{
-				new
-				{
-					Id = 0,
-					Added = DateTime.MinValue
-				}
-			};
-
-			var objs = JsonConvert.DeserializeAnonymousType(json, typeDef);
-
-			qWatchers = objs.ToDictionary(x => x.Added, x =>
-			{
-				var qw = new QuestionWatcher(x.Id);
-
-				qw.OnQuestionEdit += () => HandleQuestionEdit(x.Id);
+				qw.OnQuestionEdit += () => HandleQuestionEdit(x.QuestionId);
 
 				return qw;
-			});
-		}
-
-		private static void SaveQs()
-		{
-			lock (lck)
-			{
-				var json = JsonConvert.SerializeObject(qWatchers.Select(x => new
-				{
-					Id = x.Value.Id,
-					Added = x.Key
-				}));
-
-				File.WriteAllText(savedQsPath, json);
-			}
+			}));
 		}
 
 		private static IEnumerable<Cookie> Login(string roomUrl)
@@ -142,42 +110,54 @@ namespace GraveRobber
 					break;
 				}
 
-				var toDelete = qWatchers.Keys
-					.Where(x => (DateTime.UtcNow - x).TotalDays > 30)
-					.ToArray();
+				var toDeleteIds = new HashSet<int>(CloseRequestStore.Requests
+					.Where(x => (DateTime.UtcNow - x.RequestedAt).TotalDays > 30)
+					.Select(x => x.QuestionId)
+				);
 
-				foreach (var x in toDelete)
+				foreach (var qId in toDeleteIds)
 				{
-					qWatchers.Remove(x);
+					var qw = watchers.FirstOrDefault(x => x.Id == qId);
+
+					watchers.Remove(qw);
+
+					qw.Dispose();
+
+					CloseRequestStore.Remove(qId);
 				}
 
-				SaveQs();
 			}
 		}
 
-		private static void HandleNewCvpls(int qId)
+		private static void HandleNewCvpls(Message msg, int questionId)
 		{
-			if (qWatchers.Values.Any(x => x.Id == qId))
+			if (CloseRequestStore.Requests.Any(x => x.QuestionId == questionId))
 			{
 				return;
 			}
 
-			var qw = new QuestionWatcher(qId);
+			CloseRequestStore.Add(new CloseRequest
+			{
+				QuestionId = questionId,
+				AuthorId = msg.AuthorId,
+				MessageId = msg.Id,
+				RequestedAt = DateTime.UtcNow
+			});
 
-			qw.OnQuestionEdit += () => HandleQuestionEdit(qId);
+			var qw = new QuestionWatcher(questionId);
 
-			qWatchers[DateTime.UtcNow] = qw;
+			qw.OnQuestionEdit += () => HandleQuestionEdit(questionId);
 
-			SaveQs();
+			watchers.Add(qw);
 		}
 
 		private static void HandleQuestionEdit(int qId)
 		{
 			try
 			{
-				var addedAt = qWatchers.First(x => x.Value.Id == qId).Key;
+				var req = CloseRequestStore.Requests.First(x => x.QuestionId == qId);
 
-				HandleEdit(qId, addedAt);
+				HandleEdit(req);
 			}
 			catch (Exception ex)
 			{
@@ -185,14 +165,14 @@ namespace GraveRobber
 			}
 		}
 
-		private static void HandleEdit(int qId, DateTime qWatcherAdded)
+		private static void HandleEdit(CloseRequest req)
 		{
-			var revs = apiClient.GetRevisions(qId);
+			var revs = apiClient.GetRevisions(req.QuestionId);
 
 			if (revs == null) return;
 
 			var revBeforeCvpls = revs
-				.Where(x => x.CreatedAt < qWatcherAdded)
+				.Where(x => x.CreatedAt < req.RequestedAt)
 				.OrderByDescending(x => x.CreatedAt)
 				.First();
 
@@ -205,33 +185,39 @@ namespace GraveRobber
 
 			if (change >= threshold)
 			{
-				var votes = apiClient.GetQuestionVotes(qId);
+				var votes = apiClient.GetQuestionVotes(req.QuestionId);
 
-				ReportQuestion(votes, change);
+				ReportQuestion(req, votes, change);
 
-				var qw = qWatchers[qWatcherAdded];
+				var qw = watchers.First(x => x.Id == req.QuestionId);
 
-				qWatchers.Remove(qWatcherAdded);
+				watchers.Remove(qw);
 
 				qw.Dispose();
 
-				SaveQs();
+				CloseRequestStore.Remove(req.QuestionId);
 			}
 		}
 
-		private static void ReportQuestion(QuestionVotes v, double diff)
+		private static void ReportQuestion(CloseRequest req, QuestionVotes v, double diff)
 		{
 			var sb = new StringBuilder();
 			var baseUrl = "https://stackoverflow.com";
 			var revsLink = $"{baseUrl}/posts/{v.Id}/revisions";
 			var qLink = $"{baseUrl}/q/{v.Id}";
+			var msgLink = $"https://chat.stackoverflow.com/transcript/message/{req.MessageId}";
+			var author = new User("chat.stackoverflow.com", req.AuthorId);
+			var ping = $"@{author.Username.Replace(" ", "").Trim()}";
 			var percent = Math.Round(diff * 100);
 
 			sb.Append($"[{percent}%]");
 			sb.Append($"({revsLink}) ");
 			sb.Append("changed: [question]");
 			sb.Append($"({qLink}) ");
-			sb.Append($"(+{v.Up}/-{v.Down})");
+			sb.Append($"(+{v.Up}/-{v.Down}) ");
+			sb.Append($" - [req]");
+			sb.Append($"({msgLink}) ");
+			sb.Append(ping);
 
 			actionScheduler.CreateMessage(sb.ToString());
 		}

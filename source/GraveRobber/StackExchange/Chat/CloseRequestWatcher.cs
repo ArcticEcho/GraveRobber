@@ -16,7 +16,7 @@ namespace GraveRobber.StackExchange.Chat
 		private readonly Regex cvplsPattern;
 		private readonly RoomWatcher<DefaultWebSocket> roomWatcher;
 
-		public event Action<int> OnNewRequest;
+		public event Action<Message, int> OnNewRequest;
 
 		public CloseRequestWatcher(IEnumerable<Cookie> authCookies)
 		{
@@ -50,7 +50,7 @@ namespace GraveRobber.StackExchange.Chat
 				return;
 			}
 
-			OnNewRequest?.Invoke(questionId);
+			OnNewRequest?.Invoke(msg, questionId);
 		}
 	}
 }
