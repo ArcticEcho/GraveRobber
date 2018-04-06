@@ -187,10 +187,9 @@ namespace GraveRobber
 
 		private static void HandleEdit(int qId, DateTime qWatcherAdded)
 		{
-			var votes = apiClient.GetQuestionVotes(qId);
 			var revs = apiClient.GetRevisions(qId);
 
-			if (votes == null || revs == null) return;
+			if (revs == null) return;
 
 			var revBeforeCvpls = revs
 				.Where(x => x.CreatedAt < qWatcherAdded)
@@ -206,9 +205,15 @@ namespace GraveRobber
 
 			if (change >= threshold)
 			{
+				var votes = apiClient.GetQuestionVotes(qId);
+
 				ReportQuestion(votes, change);
 
+				var qw = qWatchers[qWatcherAdded];
+
 				qWatchers.Remove(qWatcherAdded);
+
+				qw.Dispose();
 
 				SaveQs();
 			}
