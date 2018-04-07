@@ -8,8 +8,6 @@ using System.Threading.Tasks;
 using GraveRobber.StackExchange;
 using GraveRobber.StackExchange.Api;
 using GraveRobber.StackExchange.Chat;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using StackExchange.Auth;
 using StackExchange.Chat;
 using StackExchange.Chat.Actions;
@@ -169,7 +167,7 @@ namespace GraveRobber
 		{
 			var revs = apiClient.GetRevisions(req.QuestionId);
 
-			if (revs == null) return;
+			if ((revs?.Length ?? 0) < 2) return;
 
 			var revBeforeCvpls = revs
 				.Where(x => x.CreatedAt < req.RequestedAt)
@@ -180,14 +178,14 @@ namespace GraveRobber
 				.OrderByDescending(x => x.CreatedAt)
 				.First();
 
-			var change = DamerauLevenshteinDistance.Calculate(revBeforeCvpls.Body, latestRev.Body);
+			var diff = DamerauLevenshteinDistance.Calculate(revBeforeCvpls.Body, latestRev.Body);
 			var threshold = ConfigAccessor.GetValue<double>("Threshold");
 
-			if (change >= threshold)
+			if (diff.AdjustedNormalised >= threshold)
 			{
 				var votes = apiClient.GetQuestionVotes(req.QuestionId);
 
-				ReportQuestion(req, votes, change);
+				ReportQuestion(req, votes, diff);
 
 				var qw = watchers.First(x => x.Id == req.QuestionId);
 
@@ -199,7 +197,7 @@ namespace GraveRobber
 			}
 		}
 
-		private static void ReportQuestion(CloseRequest req, QuestionVotes v, double diff)
+		private static void ReportQuestion(CloseRequest req, QuestionVotes v, DldResult diff)
 		{
 			var sb = new StringBuilder();
 			var baseUrl = "https://stackoverflow.com";
@@ -208,10 +206,14 @@ namespace GraveRobber
 			var msgLink = $"https://chat.stackoverflow.com/transcript/message/{req.MessageId}";
 			var author = new User("chat.stackoverflow.com", req.AuthorId);
 			var ping = $"@{author.Username.Replace(" ", "").Trim()}";
-			var percent = Math.Round(diff * 100);
+			var normPercent = Math.Round(diff.Normalised * 100);
+			var adNormPercent = Math.Round(diff.AdjustedNormalised * 100);
+			var dist = diff.Distance.ToString("N0");
 
-			sb.Append($"[{percent}%]");
-			sb.Append($"({revsLink}) ");
+			sb.Append($"[{normPercent}%]");
+			sb.Append($"({revsLink} ");
+			sb.Append($"\"Adjusted: {adNormPercent}%. ");
+			sb.Append($"Distance: {dist}.\") ");
 			sb.Append("changed: [question]");
 			sb.Append($"({qLink}) ");
 			sb.Append($"(+{v.Up}/-{v.Down}) ");
