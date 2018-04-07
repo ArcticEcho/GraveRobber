@@ -127,7 +127,7 @@ namespace GraveRobber.StackExchange.Chat
 		{
 			var txt = $":{msg.Id} " +
 				"I'm a chatbot that monitors [tag:cv-pls] requests to see if they " +
-				"warrant reopening. I post reports when a question receives a " +
+				"warrant reviewing. I post reports when a question receives a " +
 				"non-trivial edit; where 'non-trivial' is defined by calculating " +
 				"the Damerau-Levenshtein distance between revisions. You can check" +
 				" out what I can do by using: `commands`. My repository can be found " +
