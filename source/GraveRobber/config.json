@@ -1,10 +1,10 @@
 ﻿{
 	"StackExchange": {
-			"Chat": {
-				"RoomUrl": "https://chat.stackoverflow.com/rooms/68414/socvr-testing-facility",
-				"Email": "",
-				"Password": ""
-			},
+		"Chat": {
+			"RoomUrl": "https://chat.stackoverflow.com/rooms/68414/socvr-testing-facility",
+			"Email": "",
+			"Password": ""
+		},
 		"API": {
 			"Key": ""
 		}
