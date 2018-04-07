@@ -76,7 +76,7 @@ namespace GraveRobber
 
 		private static void InitialiseWatchers()
 		{
-			var reqs = CloseRequestStore.Requests;
+			var reqs = CloseRequestStore.Requests.ToArray();
 
 			watchers = new HashSet<QuestionWatcher>(reqs.Select(x =>
 			{
