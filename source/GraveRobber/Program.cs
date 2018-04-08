@@ -43,7 +43,7 @@ namespace GraveRobber
 
 			var cvWatcher = new CloseRequestWatcher(cookies);
 			cvWatcher.OnNewRequest += HandleNewCvpls;
-			Task.Run(() => RemoveOldQuestions());
+			Task.Run(() => RemoveOldQuestionsLoop(false));
 
 			Console.Write("done\nInitialising chat command processor...");
 
@@ -56,6 +56,7 @@ namespace GraveRobber
 
 			Console.Write("done\nLoading watched questions...");
 
+			RemoveOldQuestionsLoop(true);
 			InitialiseWatchers();
 
 			Console.Write("done\n\nSetup complete. Press CTRL + C to quit.\n\n");
@@ -99,31 +100,40 @@ namespace GraveRobber
 			return auth.GetAuthCookies(host);
 		}
 
-		private static void RemoveOldQuestions()
+		private static void RemoveOldQuestionsLoop(bool runOnce)
 		{
 			while (true)
 			{
-				if (shutdownMre.WaitOne(TimeSpan.FromMinutes(1)))
+				try
 				{
-					break;
+					var ttl = ConfigAccessor.GetValue<double>("MaxWatchTimeDays");
+					var toDeleteIds = new HashSet<int>(CloseRequestStore.Requests
+						.Where(x => (DateTime.UtcNow - x.RequestedAt).TotalDays > ttl)
+						.Select(x => x.QuestionId)
+					);
+
+					foreach (var qId in toDeleteIds)
+					{
+						CloseRequestStore.Remove(qId);
+
+						var qw = watchers.FirstOrDefault(x => x.Id == qId);
+
+						if (qw == null) continue;
+
+						watchers.Remove(qw);
+
+						qw.Dispose();
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine(ex);
 				}
 
-				var toDeleteIds = new HashSet<int>(CloseRequestStore.Requests
-					.Where(x => (DateTime.UtcNow - x.RequestedAt).TotalDays > 30)
-					.Select(x => x.QuestionId)
-				);
-
-				foreach (var qId in toDeleteIds)
+				if (runOnce || shutdownMre.WaitOne(TimeSpan.FromMinutes(1)))
 				{
-					var qw = watchers.FirstOrDefault(x => x.Id == qId);
-
-					watchers.Remove(qw);
-
-					qw.Dispose();
-
-					CloseRequestStore.Remove(qId);
+					return;
 				}
-
 			}
 		}
 
