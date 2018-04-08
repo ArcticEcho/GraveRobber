@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Text.RegularExpressions;
-using StackExchange.Auth;
 using StackExchange.Chat;
 using StackExchange.Chat.Events;
 using StackExchange.Chat.Events.Message.Extensions;

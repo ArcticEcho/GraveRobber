@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace GraveRobber.StackExchange.Api
+﻿namespace GraveRobber.StackExchange.Api
 {
 	public class QuestionVotes
 	{
