@@ -9,7 +9,7 @@
 			"Key": ""
 		}
 	},
-	"Threshold": 0.2,
-	"MinLength": 500,
+	"Threshold": 0.25,
+	"MinLength": 600,
 	"CloseRequestPattern": "^(?:\\[tag:)?cv\\-pl(?:[sz]|ease).*?https?:\\/\\/stackoverflow\\.com\\/q(?:uestions)?\\/(\\d+)(?:.*?https?:\\/\\/stackoverflow.com\\/users\\/(\\d+))?"
 }
