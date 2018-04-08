@@ -1,6 +1,6 @@
 # GraveRobber
 
-GraveRobber is a small project which aims to help the SOCVR in finding potentially reopen-worthy questions which have been closed via a `[cv-pls]` request. The bot will post a message in a chatroom once a `[cv-pls]`'ed question has been edited above a specified "change %", that is, if a question is *x*% different to when it was closed, it will be reported.
+GraveRobber is a small project which aims to help the SOCVR in monitoring questions that, via a `[cv-pls]` request, have been closed or are still pending closure. The bot will post a message in the chatroom once a question has been edited above a specified "change %", that is, if a question is *x*% different to when it was closed, it will be reported.
 
 Example report: 
 
