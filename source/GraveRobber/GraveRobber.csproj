@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AngleSharp" Version="0.9.9.2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\StackExchange\StackExchange\StackExchange.csproj" />
   </ItemGroup>
 

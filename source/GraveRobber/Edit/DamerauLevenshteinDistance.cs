@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace GraveRobber
+namespace GraveRobber.Edit
 {
 	public class DldResult
 	{
@@ -89,6 +89,12 @@ namespace GraveRobber
 			}
 
 			var dist = dCurrent[maxi];
+
+			if (dist == 0)
+			{
+				return new DldResult();
+			}
+
 			var len = Math.Max(source.Length, target.Length);
 			var norm = dist * 1.0 / len;
 			var minLen = ConfigAccessor.GetValue<int>("MinLength");

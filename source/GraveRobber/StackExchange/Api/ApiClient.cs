@@ -13,8 +13,8 @@ namespace GraveRobber.StackExchange.Api
 		private const string configSitePath = "StackExchange.API.Site";
 		private const string apiBase = "https://api.stackexchange.com/2.2";
 		private const string site = "stackoverflow";
-		private const string getQVotesFilter = "!*l7us2fz-S8HPZwSFBU-fRyB";
-		private const string getRevsFilter = "!*l8)qoY*PPz*he2OK5zotf37";
+		private const string getQVotesFilter = "!*7PYFjZaY-6Fywr94JJhdvGGcWzs";
+		private const string getRevsFilter = "!SWKA(o3c(mLvI6gCeF";
 		private readonly string apiKey;
 
 		public int QuotaRemaining { get; private set; } = -1;
@@ -53,10 +53,18 @@ namespace GraveRobber.StackExchange.Api
 			foreach (var r in obj["items"])
 			{
 				var revSecs = r.Value<int?>("creation_date");
+				var user = r.Value<JObject>("user");
+				var userId = int.MinValue;
+
+				if (user != null)
+				{
+					userId = user.Value<int?>("user_id") ?? int.MinValue;
+				}
 
 				var rev = new Revision
 				{
 					QuestionId = id,
+					AuthorId = userId,
 					CreatedAt = ParseJsonTime(revSecs),
 					Body = r.Value<string>("body"),
 				};
@@ -83,10 +91,18 @@ namespace GraveRobber.StackExchange.Api
 			}
 
 			var data = obj["items"][0];
+			var user = data.Value<JObject>("owner");
+			var userId = int.MinValue;
+
+			if (user != null)
+			{
+				userId = user.Value<int?>("user_id") ?? int.MinValue;
+			}
 
 			return new QuestionVotes
 			{
 				Id = id,
+				AuthorId = userId,
 				Up = data.Value<int>("up_vote_count"),
 				Down = data.Value<int>("down_vote_count")
 			};

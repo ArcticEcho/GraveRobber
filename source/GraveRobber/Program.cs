@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using AngleSharp.Parser.Html;
+using GraveRobber.Edit;
 using GraveRobber.StackExchange;
 using GraveRobber.StackExchange.Api;
 using GraveRobber.StackExchange.Chat;
@@ -178,14 +181,17 @@ namespace GraveRobber
 				.OrderByDescending(x => x.CreatedAt)
 				.First();
 
-			var diff = DamerauLevenshteinDistance.Calculate(revBeforeCvpls.Body, latestRev.Body);
+			var diff = EditClassifier.Classify(revBeforeCvpls.Body, latestRev.Body);
 			var threshold = ConfigAccessor.GetValue<double>("Threshold");
 
 			if (diff.AdjustedNormalised >= threshold)
 			{
 				var votes = apiClient.GetQuestionVotes(req.QuestionId);
+				var editedByOp = latestRev.AuthorId == votes.AuthorId
+					&& latestRev.AuthorId != int.MinValue
+					&& votes.AuthorId != int.MinValue;
 
-				ReportQuestion(req, votes, diff);
+				ReportQuestion(req, votes, diff, editedByOp);
 
 				var qw = watchers.First(x => x.Id == req.QuestionId);
 
@@ -197,7 +203,7 @@ namespace GraveRobber
 			}
 		}
 
-		private static void ReportQuestion(CloseRequest req, QuestionVotes v, DldResult diff)
+		private static void ReportQuestion(CloseRequest req, QuestionVotes v, EditModel edit, bool editByOp)
 		{
 			var sb = new StringBuilder();
 			var baseUrl = "https://stackoverflow.com";
@@ -206,15 +212,16 @@ namespace GraveRobber
 			var msgLink = $"https://chat.stackoverflow.com/transcript/message/{req.MessageId}";
 			var author = new User("chat.stackoverflow.com", req.AuthorId);
 			var ping = $"@{author.Username.Replace(" ", "").Trim()}";
-			var normPercent = Math.Round(diff.Normalised * 100);
-			var adNormPercent = Math.Round(diff.AdjustedNormalised * 100);
-			var dist = diff.Distance.ToString("N0");
 
-			sb.Append($"[{normPercent}%]");
+			sb.Append($"[{edit.NormalisedPretty}]");
 			sb.Append($"({revsLink} ");
-			sb.Append($"\"Adjusted: {adNormPercent}%. ");
-			sb.Append($"Distance: {dist}.\") ");
-			sb.Append("changed: [question]");
+			sb.Append($"\"Adjusted: {edit.AdjustedNormalisedPretty}. ");
+			sb.Append($"Distance: {edit.DistancePretty}.\") ");
+			sb.Append("changed");
+			sb.Append($", {edit.CodePretty} code");
+			sb.Append($", {edit.FormattingPretty} formatting");
+			sb.Append(editByOp ? " (by OP)" : "");
+			sb.Append(": [question]");
 			sb.Append($"({qLink}) ");
 			sb.Append($"(+{v.Up}/-{v.Down}) ");
 			sb.Append($" - [req]");
