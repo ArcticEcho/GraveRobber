@@ -14,7 +14,7 @@ GraveRobber compares the latest state (revision) of the question to when the rev
 Using the above example report:
 
  - `62% changed`: This is the overall change metric, how much rendered text has been modified. This number can only be positive.
- - <sup>1</sup> `Adjusted: 6%`: Same as above, but returns a lower score for smaller posts below a set threshold. This number is used to determine whether a report should be posted.
+ - <sup>1</sup> `Adjusted: 62%`: Same as above, but returns a lower score for smaller posts below a set threshold. This number is used to determine whether a report should be posted.
  - <sup>1</sup> `Distance: 665`: This is the raw edit distance returned from the Damerau-Levenshtein Distance function.
  - `+61% code`: This measures how much code has been added/removed when compared to the older revision. This number can be positive or negative. In this case, *+61%* indicates that the post now contains 61% more code.
  - `-100% formatting`: Similar to above, but used to measure formatted text (excluding code blocks). This example shows that the question now has no formatted text.
