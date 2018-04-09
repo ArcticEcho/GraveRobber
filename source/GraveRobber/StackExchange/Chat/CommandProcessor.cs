@@ -56,6 +56,10 @@ namespace GraveRobber.StackExchange.Chat
 			{
 				PrintHelp(msg);
 			}
+			else if (cmd == "REPORT HELP")
+			{
+				PrintReportHelp(msg);
+			}
 			else if (cmd == "ALIVE")
 			{
 				actionScheduler.CreateReply("Let me think about that for a moment...", msg);
@@ -116,6 +120,7 @@ namespace GraveRobber.StackExchange.Chat
 				"    opt-out        - Coming soon...\n" +
 				"    watch <id/url> - Coming soon...\n" +
 				"    help           - A little story about what I do.\n" +
+				"    report help    - Prints an explanation on what my reports mean.\n" +
 				"    alive          - Checks if I'm still up and running.\n" +
 				"    quota          - Prints how many API requests I have left.\n" +
 				"    die/stop       - A slow and painful death await...";
@@ -129,12 +134,30 @@ namespace GraveRobber.StackExchange.Chat
 				"I'm a chatbot that monitors [tag:cv-pls] requests to see if they " +
 				"warrant reviewing. I post reports when a question receives a " +
 				"non-trivial edit; where 'non-trivial' is defined by calculating " +
-				"the Damerau-Levenshtein distance between revisions (hover over the " +
-				"*x%* link for debug info). You can check out what I can do by " +
-				"using: `commands`. My repository can be found " +
+				"the Damerau-Levenshtein distance between revisions. You can " +
+				"check out what I can do by using: `commands`. My repository " +
+				"can be found " +
 				"[here](https://github.com/SO-Close-Vote-Reviewers/GraveRobber).";
 
 			actionScheduler.CreateMessage(txt);
+		}
+
+		private void PrintReportHelp(Message msg)
+		{
+			var header = $":{msg.Id} The following is an example request broken down and explained in detail: *[33%](http://example.com \"Adjusted 26%. Distance 98.\") changed, +40% code, -100% formatting (by OP): [question](http://example.com) - [req](http://example.com) @Username*";
+			var body = 
+				"    A report is a comparison of a question's current state (revision) to its revision before a close request was issued for it.\n    \n" +
+				"    '33% changed'      - How much the question has changed overall. Clicking the link will take you to the history of the question's revisions. (Hovering over the link will display extra debug info.)\n" +
+				"    '+40% code'        - The change in the amount of code. In this example, it now contains 40% more code.\n" +
+				"    '-100% formatting' - The change in how much formatted text (excluding code blocks) the question has. This example says the question now has no formatted text.\n" +
+				"    '(by OP)'          - The question was edited by the Original Poster (the author of the question).\n" +
+				"    'question'         - A link back to the question.\n" +
+				"    '(-3/+1)'          - A break-down of the votes on the question. In this case, it has 3 downvotes and 1 upvote.\n" +
+				"    'req'              - A link back to the close request.\n" +
+				"    '@Username'        - Notifies ('pings') the author of the close request.";
+
+			actionScheduler.CreateMessage(header);
+			actionScheduler.CreateMessage(body);
 		}
 	}
 }
