@@ -59,7 +59,7 @@ namespace GraveRobber
 			RemoveOldQuestionsLoop(true);
 			InitialiseWatchers();
 
-			Console.Write("done\n\nSetup complete. Press CTRL + C to quit.\n\n");
+			Console.Write("\n\nSetup complete. Press CTRL + C to quit.\n\n");
 			actionScheduler.CreateMessage("GraveRobber started.");
 			Console.CancelKeyPress += (o, e) => shutdownMre.Set();
 
@@ -78,12 +78,19 @@ namespace GraveRobber
 		private static void InitialiseWatchers()
 		{
 			var reqs = CloseRequestStore.Requests.ToArray();
+			var i = 1;
 
 			watchers = new HashSet<QuestionWatcher>(reqs.Select(x =>
 			{
+				Console.Write($"\nLoading {i} of {reqs.Length}...");
+
 				var qw = new QuestionWatcher(x.QuestionId);
 
 				qw.OnQuestionEdit += () => HandleQuestionEdit(x.QuestionId);
+
+				Console.Write($"done");
+
+				i++;
 
 				return qw;
 			}));
