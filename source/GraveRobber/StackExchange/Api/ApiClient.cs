@@ -9,6 +9,7 @@ namespace GraveRobber.StackExchange.Api
 {
 	public class ApiClient
 	{
+		private const string configAccessTokenPath = "StackExchange.API.AccessToken";
 		private const string configKeyPath = "StackExchange.API.Key";
 		private const string configSitePath = "StackExchange.API.Site";
 		private const string apiBase = "https://api.stackexchange.com/2.2";
@@ -16,6 +17,7 @@ namespace GraveRobber.StackExchange.Api
 		private const string getQVotesFilter = "!*7PYFjZaY-6Fywr94JJhdvGGcWzs";
 		private const string getRevsFilter = "!SWKA(o3c(mLvI6gCeF";
 		private readonly string apiKey;
+		private readonly string accessToken;
 
 		public int QuotaRemaining { get; private set; } = -1;
 
@@ -23,14 +25,8 @@ namespace GraveRobber.StackExchange.Api
 
 		public ApiClient()
 		{
-			var key = ConfigAccessor.GetValue<string>(configKeyPath);
-
-			if (string.IsNullOrEmpty(key))
-			{
-				throw new ArgumentException($"'{configKeyPath}' (config file) cannot be null or empty.");
-			}
-
-			apiKey = key;
+			apiKey = ConfigAccessor.GetValue<string>(configKeyPath);
+			accessToken = ConfigAccessor.GetValue<string>(configAccessTokenPath);
 
 			// Initialise QuotaRemaining.
 			GetQuestionVotes(1);
@@ -40,7 +36,7 @@ namespace GraveRobber.StackExchange.Api
 
 		public Revision[] GetRevisions(int id)
 		{
-			var endpoint = EndpointBuilder($"posts/{id}/revisions", apiKey, site, getRevsFilter);
+			var endpoint = EndpointBuilder($"posts/{id}/revisions", site, getRevsFilter);
 			var obj = GetJson(endpoint);
 
 			if (obj == null)
@@ -82,7 +78,7 @@ namespace GraveRobber.StackExchange.Api
 
 		public QuestionVotes GetQuestionVotes(int id)
 		{
-			var endpoint = EndpointBuilder($"questions/{id}", apiKey, site, getQVotesFilter);
+			var endpoint = EndpointBuilder($"questions/{id}", site, getQVotesFilter);
 			var obj = GetJson(endpoint);
 
 			if (obj == null)
@@ -154,9 +150,21 @@ namespace GraveRobber.StackExchange.Api
 			return obj;
 		}
 
-		private string EndpointBuilder(string endpoint, string key, string site, string filter)
+		private string EndpointBuilder(string endpoint, string site, string filter)
 		{
-			return $"{apiBase}/{endpoint}?key={key}&site={site}&filter={filter}";
+			var url = $"{apiBase}/{endpoint}?site={site}&filter={filter}";
+
+			if (!string.IsNullOrEmpty(apiKey))
+			{
+				url += $"&key={apiKey}";
+			}
+
+			if (!string.IsNullOrEmpty(accessToken))
+			{
+				url += $"&access_token={accessToken}";
+			}
+
+			return url;
 		}
 	}
 }

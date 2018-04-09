@@ -6,7 +6,8 @@
 			"Password": ""
 		},
 		"API": {
-			"Key": ""
+			"Key": "",
+			"AccessToken": ""
 		}
 	},
 	"MaxWatchTimeDays": 7,
