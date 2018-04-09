@@ -152,7 +152,7 @@ namespace GraveRobber.StackExchange.Chat
 				"    '-100% formatting' - The change in how much formatted text (excluding code blocks) the question has. This example says the question now has no formatted text.\n" +
 				"    '(by OP)'          - The question was edited by the Original Poster (the author of the question).\n" +
 				"    'question'         - A link back to the question.\n" +
-				"    '(-3/+1)'          - A break-down of the votes on the question. In this case, it has 3 downvotes and 1 upvote.\n" +
+				"    '(+3/-1)'          - A break-down of the votes on the question. In this case, it has 3 downvotes and 1 upvote.\n" +
 				"    'req'              - A link back to the close request.\n" +
 				"    '@Username'        - Notifies ('pings') the author of the close request.";
 
