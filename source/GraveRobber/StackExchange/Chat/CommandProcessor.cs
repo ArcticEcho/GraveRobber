@@ -86,7 +86,8 @@ namespace GraveRobber.StackExchange.Chat
 			{
 				IgnoreList.Add(msg.AuthorId);
 
-				txt = "I will no longer automatically notify you of edited questions that you have [tag:cv-pls]'d.";
+				txt = "I will no longer automatically notify you of edited " +
+					"questions that you have [tag:cv-pls]'d.";
 			}
 			else
 			{
@@ -104,7 +105,8 @@ namespace GraveRobber.StackExchange.Chat
 			{
 				IgnoreList.Remove(msg.AuthorId);
 
-				txt = "I will now automatically notify you of edited questions that you have [tag:cv-pls]'d.";
+				txt = "I will now automatically notify you of edited " +
+					"questions that you have [tag:cv-pls]'d.";
 			}
 			else
 			{
@@ -139,7 +141,8 @@ namespace GraveRobber.StackExchange.Chat
 			}
 			else
 			{
-				actionScheduler.CreateReply("Puny mortal, only room owners and moderators can kill me! :P", msg);
+				actionScheduler.CreateReply("You must be a room owner or moderator to kill me. " +
+					"Please contact your local Sam for further assistance.", msg);
 			}
 		}
 
@@ -188,7 +191,10 @@ namespace GraveRobber.StackExchange.Chat
 
 		private void PrintReportHelp(Message msg)
 		{
-			var header = $":{msg.Id} The following is an example request broken down and explained in detail: *[33%](http://example.com \"Adjusted 26%. Distance 98.\") changed, +40% code, -100% formatting (by OP): [question](http://example.com) - [req](http://example.com) @Username*";
+			var header = $":{msg.Id} The following is an example request broken down and explained in " +
+				$"detail: *[33%](http://example.com \"Adjusted 26%. Distance 98.\") changed, +40% code, " +
+				$"-100% formatting (by OP): [question](http://example.com) - [req](http://example.com) @Username*";
+
 			var body = 
 				"    A report is a comparison of a question's current state (revision) to its revision before a close request was issued for it.\n    \n" +
 				"    '33% changed'      - How much the question has changed overall. Clicking the link will take you to the history of the question's revisions. (Hovering over the link will display extra debug info.)\n" +
