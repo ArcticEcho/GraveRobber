@@ -68,6 +68,50 @@ namespace GraveRobber.StackExchange.Chat
 			{
 				PrintQuota(msg);
 			}
+			else if (cmd == "OPT-OUT" || cmd == "OPTOUT" || cmd == "OPT OUT")
+			{
+				OptOut(msg);
+			}
+			else if (cmd == "OPT-IN" || cmd == "OPTIN" || cmd == "OPT IN")
+			{
+				OptIn(msg);
+			}
+		}
+
+		private void OptOut(Message msg)
+		{
+			string txt;
+
+			if (!IgnoreList.Ids.Contains(msg.AuthorId))
+			{
+				IgnoreList.Add(msg.AuthorId);
+
+				txt = "I will no longer automatically notify you of edited questions that you have [tag:cv-pls]'d.";
+			}
+			else
+			{
+				txt = "You're already opted out, duh.";
+			}
+
+			actionScheduler.CreateReply(txt, msg);
+		}
+
+		private void OptIn(Message msg)
+		{
+			string txt;
+
+			if (IgnoreList.Ids.Contains(msg.AuthorId))
+			{
+				IgnoreList.Remove(msg.AuthorId);
+
+				txt = "I will now automatically notify you of edited questions that you have [tag:cv-pls]'d.";
+			}
+			else
+			{
+				txt = "You're already opted in, duh.";
+			}
+
+			actionScheduler.CreateReply(txt, msg);
 		}
 
 		private void PrintQuota(Message msg)
@@ -116,8 +160,8 @@ namespace GraveRobber.StackExchange.Chat
 			var txt =
 				"    commands       - Prints this beautifully formatted message.\n" +
 				"    stats          - Prints how many questions I'm watching.\n" +
-				"    opt-in         - Coming soon...\n" +
-				"    opt-out        - Coming soon...\n" +
+				"    opt-in         - I'll ping you when a question that you've cv-pls'd gets edited.\n" +
+				"    opt-out        - I'll no longer ping you for edited questions that you have cv-pls'd.\n" +
 				"    watch <id/url> - Coming soon...\n" +
 				"    help           - A little story about what I do.\n" +
 				"    report help    - Prints an explanation on what my reports mean.\n" +

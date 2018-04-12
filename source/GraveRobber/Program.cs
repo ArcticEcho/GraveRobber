@@ -224,8 +224,6 @@ namespace GraveRobber
 			var revsLink = $"{baseUrl}/posts/{v.Id}/revisions";
 			var qLink = $"{baseUrl}/q/{v.Id}";
 			var msgLink = $"https://chat.stackoverflow.com/transcript/message/{req.MessageId}";
-			var author = new User("chat.stackoverflow.com", req.AuthorId);
-			var ping = $"@{author.Username.Replace(" ", "").Trim()}";
 
 			sb.Append($"[{edit.NormalisedPretty}]");
 			sb.Append($"({revsLink} ");
@@ -240,7 +238,13 @@ namespace GraveRobber
 			sb.Append($"(+{v.Up}/-{v.Down}) ");
 			sb.Append($" - [req]");
 			sb.Append($"({msgLink}) ");
-			sb.Append(ping);
+
+			if (!IgnoreList.Ids.Contains(req.AuthorId))
+			{
+				var author = new User("chat.stackoverflow.com", req.AuthorId);
+
+				sb.Append($"@{author.Username.Replace(" ", "").Trim()}");
+			}
 
 			actionScheduler.CreateMessage(sb.ToString());
 		}
