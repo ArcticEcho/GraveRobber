@@ -2,7 +2,7 @@
 
 GraveRobber is a small project which aims to help the SOCVR in monitoring questions that, via a `[cv-pls]` request, have been closed or are still pending closure. The bot will post a message in the chatroom once a question has been edited above a specified "change %", that is, if a question is *x*% different to when it was closed, it will be reported.
 
-[Example report](https://chat.stackoverflow.com/transcript/41570?m=42016101#42016101): 
+Example report: 
 
 > [ [GraveRobber](https://github.com/SO-Close-Vote-Reviewers/GraveRobber) ] [45%](https://stackoverflow.com/posts/2147483647/revisions "Adjusted: 42%. Distance: 345.") changed (by OP), affecting code by 84% and formatting by 6%: [question](https://stackoverflow.com/q/2147483647) (-4/+1) - [req](https://chat.stackoverflow.com/transcript/message/2147483647) @​Username
 
