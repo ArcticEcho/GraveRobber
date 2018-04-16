@@ -192,17 +192,20 @@ namespace GraveRobber.StackExchange.Chat
 		private void PrintReportHelp(Message msg)
 		{
 			var header = $":{msg.Id} The following is an example request broken down and explained in " +
-				$"detail: *[33%](http://example.com \"Adjusted 26%. Distance 98.\") changed, +40% code, " +
-				$"-100% formatting (by OP): [question](http://example.com) - [req](http://example.com) @Username*";
+				$"detail: *[ [GraveRobber](https://github.com/SO-Close-Vote-Reviewers/GraveRobber) ] " +
+				$"[45%](https://stackoverflow.com/posts/2147483647/revisions \"Adjusted: 42%. Distance: " +
+				$"345.\") changed (by OP), affecting code by 84% and formatting by 6%: " +
+				$"[question](https://stackoverflow.com/q/2147483647) (-4/+1) - " +
+				$"[req](https://chat.stackoverflow.com/transcript/message/2147483647) @​Username*";
 
 			var body = 
 				"    A report is a comparison of a question's current state (revision) to its revision before a close request was issued for it.\n    \n" +
-				"    '33% changed'      - How much the question has changed overall. Clicking the link will take you to the history of the question's revisions. (Hovering over the link will display extra debug info.)\n" +
-				"    '+40% code'        - The change in the amount of code. In this example, it now contains 40% more code.\n" +
-				"    '-100% formatting' - The change in how much formatted text (excluding code blocks) the question has. This example says the question now has no formatted text.\n" +
+				"    '45% changed'      - How much the question has changed overall. Clicking the link will take you to the history of the question's revisions. (Hovering over the link will display extra debug info.)\n" +
 				"    '(by OP)'          - The question was edited by the Original Poster (the author of the question).\n" +
+				"    'code by 84%'      - How much of the edit alters code characters. In this example, 84% of the edit affects code.\n" +
+				"    'formatting by 6%' - How much of the edit alters formatted text (excluding code blocks). In this example, 6% of the edit affects formatted text.\n" +
 				"    'question'         - A link back to the question.\n" +
-				"    '(+3/-1)'          - A break-down of the votes on the question. In this case, it has 3 downvotes and 1 upvote.\n" +
+				"    '(-4/+1)'          - A break-down of the votes on the question. In this case, it has 4 downvotes and 1 upvote.\n" +
 				"    'req'              - A link back to the close request.\n" +
 				"    '@Username'        - Notifies ('pings') the author of the close request.";
 

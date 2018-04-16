@@ -6,7 +6,7 @@ namespace GraveRobber.StackExchange
 {
 	public class QuestionWatcher : IDisposable
 	{
-		private readonly DefaultWebSocket ws;
+		private DefaultWebSocket ws;
 		private bool dispose;
 
 		public int Id { get; private set; }
@@ -18,13 +18,8 @@ namespace GraveRobber.StackExchange
 		public QuestionWatcher(int questionId)
 		{
 			Id = questionId;
-			ws = new DefaultWebSocket();
 
-			ws.OnError += ex => Console.WriteLine(ex);
-			ws.OnTextMessage += HandleNewMessage;
-
-			ws.Connect("wss://qa.sockets.stackexchange.com");
-			ws.Send($"1-question-{questionId}");
+			Init();
 		}
 
 		~QuestionWatcher()
@@ -45,6 +40,23 @@ namespace GraveRobber.StackExchange
 		}
 
 
+
+		private void Init()
+		{
+			ws = new DefaultWebSocket();
+
+			ws.OnError += ex =>
+			{
+				Console.WriteLine(ex);
+
+				Init();
+			};
+			ws.OnTextMessage += HandleNewMessage;
+			ws.OnClose += () => Init();
+
+			ws.Connect("wss://qa.sockets.stackexchange.com");
+			ws.Send($"1-question-{Id}");
+		}
 
 		private void HandleNewMessage(string message)
 		{

@@ -18,24 +18,8 @@ namespace GraveRobber.Edit
 		public string DistancePretty => Distance.ToString("N0");
 		public string NormalisedPretty => $"{Math.Round(Normalised * 100)}%";
 		public string AdjustedNormalisedPretty => $"{Math.Round(AdjustedNormalised * 100)}%";
-		public string CodePretty
-		{
-			get
-			{
-				var num = $"{Math.Round(Code * 100)}%";
-
-				return Code > 0 ? "+" + num : num;
-			}
-		}
-		public string FormattingPretty
-		{
-			get
-			{
-				var num = $"{Math.Round(Formatting * 100)}%";
-
-				return Formatting > 0 ? "+" + num : num;
-			}
-		}
+		public string CodePretty => $"{Math.Round(Code * 100)}%";
+		public string FormattingPretty => $"{Math.Round(Formatting * 100)}%";
 	}
 
 	public static class EditClassifier
@@ -47,8 +31,10 @@ namespace GraveRobber.Edit
 		public static EditModel Classify(string source, string target)
 		{
 			var txtDiff = CalculateTextDiff(source, target);
-			var codeDiff = CalculateCodeDiff(source, target);
-			var formatDiff = CalculateFormattingDiff(source, target);
+			var codeDist = GetCodeDistance(source, target);
+			var formattingDist = GetFormattingDistance(source, target);
+			var codeDiff = codeDist * 1.0 / txtDiff.Distance;
+			var formattingDiff = formattingDist * 1.0 / txtDiff.Distance;
 
 			return new EditModel
 			{
@@ -57,7 +43,7 @@ namespace GraveRobber.Edit
 				Normalised = txtDiff.Normalised,
 				AdjustedNormalised = txtDiff.AdjustedNormalised,
 				Code = codeDiff,
-				Formatting = formatDiff
+				Formatting = formattingDiff
 			};
 		}
 
@@ -65,29 +51,29 @@ namespace GraveRobber.Edit
 
 		private static DldResult CalculateTextDiff(string source, string target)
 		{
-			var sourceTxt = GetText(source);
-			var targetTxt = GetText(target);
+			var sourceTxt = GetRenderedText(source);
+			var targetTxt = GetRenderedText(target);
 
 			return DamerauLevenshteinDistance.Calculate(sourceTxt, targetTxt);
 		}
 
-		private static double CalculateCodeDiff(string source, string target)
+		private static int GetCodeDistance(string source, string target)
 		{
 			var sourceCode = GetCode(source);
 			var targetCode = GetCode(target);
 			var diff = DamerauLevenshteinDistance.Calculate(sourceCode, targetCode);
 
-			return sourceCode.Length > targetCode.Length ? -diff.Normalised : diff.Normalised;
+			return diff.Distance;
 		}
 
-		private static double CalculateFormattingDiff(string source, string target)
+		private static int GetFormattingDistance(string source, string target)
 		{
 			var sourceTxt = GetFormattedText(source);
 			var targetTxt = GetFormattedText(target);
 
 			var diff = DamerauLevenshteinDistance.Calculate(sourceTxt, targetTxt);
 
-			return sourceTxt.Length > targetTxt.Length ? -diff.Normalised : diff.Normalised;
+			return diff.Distance;
 		}
 
 		// Excludes code blocks.
@@ -137,7 +123,7 @@ namespace GraveRobber.Edit
 			return code.ToString().Trim();
 		}
 
-		private static string GetText(string rev)
+		private static string GetRenderedText(string rev)
 		{
 			var dom = new HtmlParser().Parse(rev);
 

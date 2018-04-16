@@ -200,53 +200,30 @@ namespace GraveRobber
 
 			if (diff.AdjustedNormalised >= threshold)
 			{
-				var votes = apiClient.GetQuestionVotes(req.QuestionId);
-				var editedByOp = latestRev.AuthorId == votes.AuthorId
-					&& latestRev.AuthorId != int.MinValue
-					&& votes.AuthorId != int.MinValue;
-
-				ReportQuestion(req, votes, diff, editedByOp);
-
-				var qw = watchers.First(x => x.Id == req.QuestionId);
-
-				watchers.Remove(qw);
-
-				qw.Dispose();
-
-				CloseRequestStore.Remove(req.QuestionId);
+				PostNewReport(req, diff, latestRev);
 			}
 		}
 
-		private static void ReportQuestion(CloseRequest req, QuestionVotes v, EditModel edit, bool editByOp)
+		private static void PostNewReport(CloseRequest req, EditModel diff, Revision latestRev)
 		{
-			var sb = new StringBuilder();
-			var baseUrl = "https://stackoverflow.com";
-			var revsLink = $"{baseUrl}/posts/{v.Id}/revisions";
-			var qLink = $"{baseUrl}/q/{v.Id}";
-			var msgLink = $"https://chat.stackoverflow.com/transcript/message/{req.MessageId}";
+			var votes = apiClient.GetQuestionVotes(req.QuestionId);
+			var editedByOp = latestRev.AuthorId == votes.AuthorId
+				&& latestRev.AuthorId != int.MinValue
+				&& votes.AuthorId != int.MinValue;
 
-			sb.Append($"[{edit.NormalisedPretty}]");
-			sb.Append($"({revsLink} ");
-			sb.Append($"\"Adjusted: {edit.AdjustedNormalisedPretty}. ");
-			sb.Append($"Distance: {edit.DistancePretty}.\") ");
-			sb.Append("changed");
-			sb.Append($", {edit.CodePretty} code");
-			sb.Append($", {edit.FormattingPretty} formatting");
-			sb.Append(editByOp ? " (by OP)" : "");
-			sb.Append(": [question]");
-			sb.Append($"({qLink}) ");
-			sb.Append($"(+{v.Up}/-{v.Down}) ");
-			sb.Append($" - [req]");
-			sb.Append($"({msgLink}) ");
+			var reportTxt = ReportBuilder.Build(req, votes, diff, editedByOp);
 
-			if (!IgnoreList.Ids.Contains(req.AuthorId))
+			actionScheduler.CreateMessage(reportTxt);
+
+			using (var qw = watchers.FirstOrDefault(x => x.Id == req.QuestionId))
 			{
-				var author = new User("chat.stackoverflow.com", req.AuthorId);
-
-				sb.Append($"@{author.Username.Replace(" ", "").Trim()}");
+				if (qw != null)
+				{
+					watchers.Remove(qw);
+				}
 			}
 
-			actionScheduler.CreateMessage(sb.ToString());
+			CloseRequestStore.Remove(req.QuestionId);
 		}
 	}
 }
