@@ -38,7 +38,7 @@ namespace GraveRobber.Edit
 				: codeDist * 1.0 / (txtDiff.Distance + codeDist);
 			var formattingDiff = formattingDist == 0
 				? 0
-				: formattingDist * 1.0 / (txtDiff.Distance + codeDist);
+				: formattingDist * 1.0 / (txtDiff.Distance + formattingDist);
 
 			return new EditModel
 			{
@@ -94,14 +94,21 @@ namespace GraveRobber.Edit
 					continue;
 				}
 
-				if (element.NodeName == "CODE" && element?.ParentElement.NodeName == "PRE")
+				if (element.NodeName == "PRE")
 				{
 					continue;
 				}
 
-				if (element.NodeName == "PRE" && element.FirstChild?.NodeName == "CODE")
+				if (element.NodeName == "A")
 				{
-					continue;
+					formattedText.Append(element.Attributes["href"].Value);
+					formattedText.Append(" ");
+				}
+
+				if (element.NodeName == "IMG")
+				{
+					formattedText.Append(element.Attributes["src"].Value);
+					formattedText.Append(" ");
 				}
 
 				formattedText.Append(element.TextContent);
