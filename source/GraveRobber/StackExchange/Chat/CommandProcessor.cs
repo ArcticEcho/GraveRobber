@@ -118,13 +118,13 @@ namespace GraveRobber.StackExchange.Chat
 
 		private void PrintQuota(Message msg)
 		{
-			if (Program.apiClient.QuotaRemaining < 1)
+			if (Program.ApiClient.QuotaRemaining < 1)
 			{
 				actionScheduler.CreateReply("I'm totally out of requests. :(", msg);
 			}
 			else
 			{
-				var reqs = Program.apiClient.QuotaRemaining.ToString("N0");
+				var reqs = Program.ApiClient.QuotaRemaining.ToString("N0");
 
 				actionScheduler.CreateReply($"I only have {reqs} requests left :/", msg);
 			}

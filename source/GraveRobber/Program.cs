@@ -23,7 +23,9 @@ namespace GraveRobber
 
 		public static int WatchedQuestions => watchers.Count;
 
-		public static ApiClient apiClient { get; private set; }
+		public static ApiClient ApiClient { get; private set; }
+
+
 
 		public static void Main(string[] args)
 		{
@@ -32,7 +34,7 @@ namespace GraveRobber
 
 			Console.Write("Initialising SE API client...");
 
-			apiClient = new ApiClient();
+			ApiClient = new ApiClient();
 
 			Console.Write("done\nAuthenticating with SE...");
 
@@ -73,6 +75,7 @@ namespace GraveRobber
 				qw.Dispose();
 			}
 		}
+
 
 
 		private static void InitialiseWatchers()
@@ -182,7 +185,7 @@ namespace GraveRobber
 
 		private static void HandleEdit(CloseRequest req)
 		{
-			var revs = apiClient.GetRevisions(req.QuestionId);
+			var revs = ApiClient.GetRevisions(req.QuestionId);
 
 			if ((revs?.Length ?? 0) < 2) return;
 
@@ -206,7 +209,7 @@ namespace GraveRobber
 
 		private static void PostNewReport(CloseRequest req, EditModel diff, Revision latestRev)
 		{
-			var votes = apiClient.GetQuestionVotes(req.QuestionId);
+			var votes = ApiClient.GetQuestionVotes(req.QuestionId);
 			var editedByOp = latestRev.AuthorId == votes.AuthorId
 				&& latestRev.AuthorId != int.MinValue
 				&& votes.AuthorId != int.MinValue;

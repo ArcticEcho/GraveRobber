@@ -33,8 +33,12 @@ namespace GraveRobber.Edit
 			var txtDiff = CalculateTextDiff(source, target);
 			var codeDist = GetCodeDistance(source, target);
 			var formattingDist = GetFormattingDistance(source, target);
-			var codeDiff = codeDist * 1.0 / txtDiff.Distance;
-			var formattingDiff = formattingDist * 1.0 / txtDiff.Distance;
+			var codeDiff = codeDist == 0 
+				? 0
+				: codeDist * 1.0 / (txtDiff.Distance + codeDist);
+			var formattingDiff = formattingDist == 0
+				? 0
+				: formattingDist * 1.0 / (txtDiff.Distance + codeDist);
 
 			return new EditModel
 			{
