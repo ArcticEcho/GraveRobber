@@ -24,18 +24,20 @@ namespace GraveRobber
 			sb.Append($"\"Adjusted: {edit.AdjustedNormalisedPretty}. ");
 			sb.Append($"Distance: {edit.DistancePretty}.\") ");
 			sb.Append($"changed{(editByOp ? " (by OP)" : "")}, ");
-			sb.Append($"affecting code by {edit.CodePretty} ");
-			sb.Append($"and formatting by {edit.FormattingPretty}: ");
+			sb.Append($"{edit.CodePretty} code, ");
+			sb.Append($"{edit.FormattingPretty} formatting: ");
 			sb.Append($"[question]({qLink}) ");
 			sb.Append($"(-{v.Down}/+{v.Up}) ");
-			sb.Append($"- [req]({msgLink}) ");
+			sb.Append($"- [requested]({msgLink}) by ");
+
+			var author = new User($"chat.{site}", req.AuthorId);
 
 			if (!IgnoreList.Ids.Contains(req.AuthorId))
 			{
-				var author = new User($"chat.{site}", req.AuthorId);
-
-				sb.Append($"@{author.Username.Replace(" ", "").Trim()}");
+				sb.Append("@");
 			}
+
+			sb.Append($"{author.Username.Replace(" ", "").Trim()}");
 
 			return sb.ToString();
 		}
