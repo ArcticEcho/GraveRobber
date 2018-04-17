@@ -155,7 +155,14 @@ namespace GraveRobber.StackExchange.Chat
 				txt += "s";
 			}
 
-			actionScheduler.CreateReply(txt + ".", msg);
+			if (Program.IsStillLoading)
+			{
+				txt += " (still initialising)";
+			}
+
+			txt += ".";
+
+			actionScheduler.CreateReply(txt, msg);
 		}
 
 		private void PrintCommands(Message msg)

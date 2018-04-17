@@ -20,6 +20,8 @@ namespace GraveRobber
 		private static HashSet<QuestionWatcher> watchers;
 		private static ActionScheduler actionScheduler;
 
+		public static bool IsStillLoading { get; private set; } = true;
+
 		public static int WatchedQuestions => watchers.Count;
 
 		public static ApiClient ApiClient { get; private set; }
@@ -55,24 +57,30 @@ namespace GraveRobber
 
 			actionScheduler = new ActionScheduler(cookies, roomUrl);
 
-			Console.Write("done\nLoading watched questions...");
+			Console.Write("done\n\nSetup complete. Press CTRL + C to quit.\n\n");
 
-			RemoveOldQuestionsLoop(true);
-			InitialiseWatchers();
+			// load old requests in the background
+			Task.Run(() =>
+			{
+				try
+				{
+					RemoveOldQuestionsLoop(true);
+					InitialiseWatchers();
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine(ex);
+				}
 
-			Console.Write("\n\nSetup complete. Press CTRL + C to quit.\n\n");
+				IsStillLoading = false;
+			});
+
 			actionScheduler.CreateMessage("GraveRobber started.");
 			Console.CancelKeyPress += (o, e) => shutdownMre.Set();
 
 			shutdownMre.WaitOne();
 
 			Console.Write("\nStopping...\n\n");
-
-			actionScheduler.Dispose();
-			foreach (var qw in watchers)
-			{
-				qw.Dispose();
-			}
 		}
 
 
@@ -80,25 +88,31 @@ namespace GraveRobber
 		private static void InitialiseWatchers()
 		{
 			var reqs = CloseRequestStore.Requests.ToArray();
-			var i = 1;
 
-			watchers = new HashSet<QuestionWatcher>(reqs.Select(x =>
+			watchers = new HashSet<QuestionWatcher>();
+
+			foreach (var r in reqs)
 			{
-				Console.Write($"\nLoading {i} of {reqs.Length}...");
+				// This loop could be running for a while,
+				// so let's double check that the request
+				// is still alive.
+				if (CloseRequestStore.Requests.All(y => r.QuestionId != y.QuestionId))
+				{
+					continue;
+				}
 
-				var qw = new QuestionWatcher(x.QuestionId);
+				var qw = new QuestionWatcher(r.QuestionId);
 
-				qw.OnQuestionEdit += () => HandleQuestionEdit(x.QuestionId);
+				qw.OnQuestionEdit += () => HandleQuestionEdit(r.QuestionId);
+
+				watchers.Add(qw);
 
 				// Seems like there's a rate limit on connection websockets.
-				Thread.Sleep(3000);
-
-				Console.Write($"done");
-
-				i++;
-
-				return qw;
-			}));
+				if (shutdownMre.WaitOne(3000))
+				{
+					return;
+				}
+			}
 		}
 
 		private static IEnumerable<Cookie> Login(string roomUrl)
