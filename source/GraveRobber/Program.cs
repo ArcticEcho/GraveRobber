@@ -18,6 +18,7 @@ namespace GraveRobber
 	{
 		private static ManualResetEvent shutdownMre;
 		private static HashSet<QuestionWatcher> watchers;
+		private static QuestionWatcherFactory qwFactory;
 		private static ActionScheduler actionScheduler;
 
 		public static bool IsStillLoading { get; private set; } = true;
@@ -32,6 +33,7 @@ namespace GraveRobber
 		{
 			shutdownMre = new ManualResetEvent(false);
 			watchers = new HashSet<QuestionWatcher>();
+			qwFactory = new QuestionWatcherFactory();
 
 			Console.Write("Initialising SE API client...");
 
@@ -89,8 +91,6 @@ namespace GraveRobber
 		{
 			var reqs = CloseRequestStore.Requests.ToArray();
 
-			watchers = new HashSet<QuestionWatcher>();
-
 			foreach (var r in reqs)
 			{
 				// This loop could be running for a while,
@@ -101,16 +101,13 @@ namespace GraveRobber
 					continue;
 				}
 
-				var qw = new QuestionWatcher(r.QuestionId);
+				var qw = qwFactory.Create(r.QuestionId);
 
 				qw.OnQuestionEdit += () => HandleQuestionEdit(r.QuestionId);
 
-				watchers.Add(qw);
-
-				// Seems like there's a rate limit on connection websockets.
-				if (shutdownMre.WaitOne(3000))
+				lock (watchers)
 				{
-					return;
+					watchers.Add(qw);
 				}
 			}
 		}
@@ -142,13 +139,16 @@ namespace GraveRobber
 					{
 						CloseRequestStore.Remove(qId);
 
-						var qw = watchers.FirstOrDefault(x => x.Id == qId);
+						lock (watchers)
+						{
+							var qw = watchers.FirstOrDefault(x => x.Id == qId);
 
-						if (qw == null) continue;
+							if (qw == null) continue;
 
-						watchers.Remove(qw);
+							watchers.Remove(qw);
 
-						qw.Dispose();
+							qw.Dispose();
+						}
 					}
 				}
 				catch (Exception ex)
@@ -178,11 +178,14 @@ namespace GraveRobber
 				RequestedAt = DateTime.UtcNow
 			});
 
-			var qw = new QuestionWatcher(questionId);
+			var qw = qwFactory.Create(questionId);
 
 			qw.OnQuestionEdit += () => HandleQuestionEdit(questionId);
 
-			watchers.Add(qw);
+			lock (watchers)
+			{
+				watchers.Add(qw);
+			}
 		}
 
 		private static void HandleQuestionEdit(int qId)
@@ -234,6 +237,7 @@ namespace GraveRobber
 
 			actionScheduler.CreateMessage(reportTxt);
 
+			lock (watchers)
 			using (var qw = watchers.FirstOrDefault(x => x.Id == req.QuestionId))
 			{
 				if (qw != null)
