@@ -22,7 +22,7 @@ namespace GraveRobber
 			sb.Append($"[ [GraveRobber]({projectUrl}) ] ");
 			sb.Append($"[{edit.NormalisedPretty}]({revsLink} ");
 			sb.Append($"\"Adjusted: {edit.AdjustedNormalisedPretty}. ");
-			sb.Append($"Distance: {edit.DistancePretty}.\") ");
+			sb.Append($"Distance: {edit.TotalDistancePretty}.\") ");
 			sb.Append($"changed{(editByOp ? " (by OP)" : "")}, ");
 			sb.Append($"{edit.CodePretty} code, ");
 			sb.Append($"{edit.FormattingPretty} formatting: ");

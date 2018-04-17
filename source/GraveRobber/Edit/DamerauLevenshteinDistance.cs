@@ -2,22 +2,11 @@
 
 namespace GraveRobber.Edit
 {
-	public class DldResult
-	{
-		public int Distance { get; set; }
-
-		public double Normalised { get; set; }
-
-		public double AdjustedNormalised { get; set; }
-
-		public int Length { get; set; }
-	}
-
 	public static class DamerauLevenshteinDistance
 	{
 		// Adapted from https://stackoverflow.com/a/9454016.
 
-		public static DldResult Calculate(string source, string target)
+		public static int Calculate(string source, string target)
 		{
 			var length1 = source.Length;
 			var length2 = target.Length;
@@ -88,25 +77,7 @@ namespace GraveRobber.Edit
 				jm1++;
 			}
 
-			var dist = dCurrent[maxi];
-
-			if (dist == 0)
-			{
-				return new DldResult();
-			}
-
-			var len = Math.Max(source.Length, target.Length);
-			var norm = dist * 1.0 / len;
-			var minLen = ConfigAccessor.GetValue<int>("MinLength");
-			var adNorm = dist * 1.0 / Math.Max(len, minLen);
-
-			return new DldResult
-			{
-				Distance = dist,
-				Normalised = norm,
-				AdjustedNormalised = adNorm,
-				Length = len
-			};
+			return dCurrent[maxi];
 		}
 
 		private static void Swap<T>(ref T arg1, ref T arg2)
