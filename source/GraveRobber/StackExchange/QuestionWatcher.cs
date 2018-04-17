@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Newtonsoft.Json.Linq;
 using StackExchange.Net.WebSockets;
 
@@ -41,7 +42,7 @@ namespace GraveRobber.StackExchange
 
 
 
-		private void Init()
+		private void Init(bool isRestart = false)
 		{
 			ws = new DefaultWebSocket();
 
@@ -49,10 +50,16 @@ namespace GraveRobber.StackExchange
 			{
 				Console.WriteLine(ex);
 
-				Init();
+				Init(true);
 			};
 			ws.OnTextMessage += HandleNewMessage;
-			ws.OnClose += () => Init();
+			ws.OnClose += () => Init(true);
+
+			if (isRestart)
+			{
+				// Wait a bit before retrying.
+				Thread.Sleep(3000);
+			}
 
 			ws.Connect("wss://qa.sockets.stackexchange.com");
 			ws.Send($"1-question-{Id}");

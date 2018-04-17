@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using GraveRobber.Edit;
@@ -90,6 +89,9 @@ namespace GraveRobber
 				var qw = new QuestionWatcher(x.QuestionId);
 
 				qw.OnQuestionEdit += () => HandleQuestionEdit(x.QuestionId);
+
+				// Seems like there's a rate limit on connection websockets.
+				Thread.Sleep(3000);
 
 				Console.Write($"done");
 
