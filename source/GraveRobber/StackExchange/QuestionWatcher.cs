@@ -37,6 +37,8 @@ namespace GraveRobber.StackExchange
 
 			ws.Dispose();
 
+			OnQuestionEdit = null;
+
 			GC.SuppressFinalize(this);
 		}
 

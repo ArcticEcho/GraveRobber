@@ -66,7 +66,6 @@ namespace GraveRobber
 			{
 				try
 				{
-					RemoveOldQuestionsLoop(true);
 					InitialiseWatchers();
 				}
 				catch (Exception ex)
@@ -137,18 +136,7 @@ namespace GraveRobber
 
 					foreach (var qId in toDeleteIds)
 					{
-						CloseRequestStore.Remove(qId);
-
-						lock (watchers)
-						{
-							var qw = watchers.FirstOrDefault(x => x.Id == qId);
-
-							if (qw == null) continue;
-
-							watchers.Remove(qw);
-
-							qw.Dispose();
-						}
+						RemoveRequest(qId);
 					}
 				}
 				catch (Exception ex)
@@ -160,6 +148,22 @@ namespace GraveRobber
 				{
 					return;
 				}
+			}
+		}
+
+		private static void RemoveRequest(int qId)
+		{
+			CloseRequestStore.Remove(qId);
+
+			lock (watchers)
+			{
+				var qw = watchers.FirstOrDefault(x => x.Id == qId);
+
+				if (qw == null) return;
+
+				watchers.Remove(qw);
+
+				qw.Dispose();
 			}
 		}
 
@@ -192,9 +196,16 @@ namespace GraveRobber
 		{
 			try
 			{
-				var req = CloseRequestStore.Requests.First(x => x.QuestionId == qId);
+				var req = CloseRequestStore.Requests.FirstOrDefault(x => x.QuestionId == qId);
 
-				HandleEdit(req);
+				if (req == null)
+				{
+					RemoveRequest(qId);
+				}
+				else
+				{
+					HandleEdit(req);
+				}
 			}
 			catch (Exception ex)
 			{
@@ -237,16 +248,7 @@ namespace GraveRobber
 
 			actionScheduler.CreateMessage(reportTxt);
 
-			lock (watchers)
-			using (var qw = watchers.FirstOrDefault(x => x.Id == req.QuestionId))
-			{
-				if (qw != null)
-				{
-					watchers.Remove(qw);
-				}
-			}
-
-			CloseRequestStore.Remove(req.QuestionId);
+			RemoveRequest(req.QuestionId);
 		}
 	}
 }
