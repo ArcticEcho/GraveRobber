@@ -12,13 +12,11 @@ namespace GraveRobber.Edit
 		public double Normalised { get; set; }
 		public double AdjustedNormalised { get; set; }
 		public double Code { get; set; }
-		public double Formatting { get; set; }
 
 		public string TotalDistancePretty => TotalDistance.ToString("N0");
 		public string NormalisedPretty => $"{Math.Round(Normalised * 100)}%";
 		public string AdjustedNormalisedPretty => $"{Math.Round(AdjustedNormalised * 100)}%";
 		public string CodePretty => $"{Math.Round(Code * 100)}%";
-		public string FormattingPretty => $"{Math.Round(Formatting * 100)}%";
 	}
 
 	public static class EditClassifier
@@ -29,35 +27,40 @@ namespace GraveRobber.Edit
 
 		public static EditModel Classify(string source, string target)
 		{
-			var txtDist = CalculatePlainTextDistance(source, target);
+			var renderedDist = CalculateRenderedTextDistance(source, target, out var len);
+			var plainDist = CalculatePlainTextDistance(source, target);
 			var codeDist = GetCodeDistance(source, target);
-			var formattingDist = GetFormattingDistance(source, target);
-			var totalDist = txtDist + codeDist + formattingDist;
+			var totalDist = plainDist + codeDist;
 
 			var codeDiff = codeDist == 0 
 				? 0
 				: codeDist * 1.0 / totalDist;
 
-			var formattingDiff = formattingDist == 0
-				? 0
-				: formattingDist * 1.0 / totalDist;
-
-			var len = Math.Max(source.Length, target.Length);
-			var norm = totalDist * 1.0 / len;
+			var norm = renderedDist * 1.0 / len;
 			var minLen = ConfigAccessor.GetValue<int>("MinLength");
-			var adNorm = totalDist * 1.0 / Math.Max(len, minLen);
+			var adNorm = renderedDist * 1.0 / Math.Max(len, minLen);
 
 			return new EditModel
 			{
 				TotalDistance = totalDist,
 				Normalised = norm,
 				AdjustedNormalised = adNorm,
-				Code = codeDiff,
-				Formatting = formattingDiff
+				Code = codeDiff
 			};
 		}
 
 
+
+		private static int CalculateRenderedTextDistance(string source, string target, out int len)
+		{
+			var sourceTxt = GetRenderedText(source);
+			var targetTxt = GetRenderedText(target);
+			var dist = DamerauLevenshteinDistance.Calculate(sourceTxt, targetTxt);
+
+			len = Math.Max(sourceTxt.Length, targetTxt.Length);
+
+			return dist;
+		}
 
 		private static int CalculatePlainTextDistance(string source, string target)
 		{
@@ -77,55 +80,6 @@ namespace GraveRobber.Edit
 			return dist;
 		}
 
-		private static int GetFormattingDistance(string source, string target)
-		{
-			var sourceTxt = GetFormattedText(source);
-			var targetTxt = GetFormattedText(target);
-
-			var dist = DamerauLevenshteinDistance.Calculate(sourceTxt, targetTxt);
-
-			return dist;
-		}
-
-		// Excludes code blocks.
-		private static string GetFormattedText(string rev)
-		{
-			var dom = new HtmlParser().Parse(rev);
-			var allFormatElements = dom.QuerySelectorAll("pre,code,strong,em,blockquote,img,a");
-			var formattedText = new StringBuilder();
-
-			foreach (var element in allFormatElements)
-			{
-				if (allFormatElements.Any(x => x == element?.ParentElement))
-				{
-					continue;
-				}
-
-				if (element.NodeName == "PRE")
-				{
-					continue;
-				}
-
-				if (element.NodeName == "A")
-				{
-					formattedText.Append(element.Attributes["href"].Value);
-					formattedText.Append(" ");
-				}
-
-				if (element.NodeName == "IMG")
-				{
-					formattedText.Append(element.Attributes["src"].Value);
-					formattedText.Append(" ");
-				}
-
-				var f = multiWhitespace.Replace(element.TextContent, " ").Trim();
-				formattedText.Append(f);
-				formattedText.Append(" ");
-			}
-
-			return formattedText.ToString().Trim();
-		}
-
 		private static string GetCode(string rev)
 		{
 			var dom = new HtmlParser().Parse(rev);
@@ -134,12 +88,18 @@ namespace GraveRobber.Edit
 
 			foreach (var e in codeElements)
 			{
-				var c = multiWhitespace.Replace(e.TextContent, " ").Trim();
+				var c = multiWhitespace.Replace(e.TextContent, "");
 				code.Append(c);
-				code.Append(" ");
 			}
 
-			return code.ToString().Trim();
+			return code.ToString();
+		}
+
+		private static string GetRenderedText(string rev)
+		{
+			var dom = new HtmlParser().Parse(rev);
+
+			return multiWhitespace.Replace(dom.Body.TextContent, "");
 		}
 
 		private static string GetPlainText(string rev)
@@ -167,12 +127,11 @@ namespace GraveRobber.Edit
 					continue;
 				}
 
-				var pTxt = multiWhitespace.Replace(p.TextContent, " ").Trim();
+				var pTxt = multiWhitespace.Replace(p.TextContent, "");
 				text.Append(pTxt);
-				text.Append(" ");
 			}
 
-			return text.ToString().Trim();
+			return text.ToString();
 		}
 	}
 }

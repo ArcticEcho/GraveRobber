@@ -24,8 +24,7 @@ namespace GraveRobber
 			sb.Append($"\"Adjusted: {edit.AdjustedNormalisedPretty}. ");
 			sb.Append($"Distance: {edit.TotalDistancePretty}.\") ");
 			sb.Append($"changed{(editByOp ? " (by OP)" : "")}, ");
-			sb.Append($"{edit.CodePretty} code, ");
-			sb.Append($"{edit.FormattingPretty} formatting: ");
+			sb.Append($"{edit.CodePretty} code: ");
 			sb.Append($"[question]({qLink}) ");
 			sb.Append($"(-{v.Down}/+{v.Up}) ");
 			sb.Append($"- [requested]({msgLink}) by ");
