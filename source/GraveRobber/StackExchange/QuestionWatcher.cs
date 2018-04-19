@@ -8,7 +8,10 @@ namespace GraveRobber.StackExchange
 	public class QuestionWatcher : IDisposable
 	{
 		private DefaultWebSocket ws;
+		private bool restartPending;
 		private bool dispose;
+
+		internal Action<QuestionWatcher> WebsocketRestartCallback { get; set; }
 
 		public int Id { get; private set; }
 
@@ -44,27 +47,44 @@ namespace GraveRobber.StackExchange
 
 
 
-		private void Init(bool isRestart = false)
+		internal bool Init()
 		{
-			ws = new DefaultWebSocket();
+			try
+			{
+				ws = new DefaultWebSocket();
 
-			ws.OnError += ex =>
+				ws.OnError += ex =>
+				{
+					Console.WriteLine(ex);
+
+					InvokeRestartCallback();
+				};
+				ws.OnTextMessage += HandleNewMessage;
+				ws.OnClose += InvokeRestartCallback;
+
+				ws.Connect("wss://qa.sockets.stackexchange.com");
+				ws.Send($"1-question-{Id}");
+
+				restartPending = false;
+
+				return true;
+			}
+			catch (Exception ex)
 			{
 				Console.WriteLine(ex);
 
-				Init(true);
-			};
-			ws.OnTextMessage += HandleNewMessage;
-			ws.OnClose += () => Init(true);
-
-			if (isRestart)
-			{
-				// Wait a bit before retrying.
-				Thread.Sleep(3000);
+				return false;
 			}
+		}
 
-			ws.Connect("wss://qa.sockets.stackexchange.com");
-			ws.Send($"1-question-{Id}");
+		private void InvokeRestartCallback()
+		{
+			if (restartPending) return;
+			restartPending = true;
+
+			ws?.Dispose();
+
+			WebsocketRestartCallback?.Invoke(this);
 		}
 
 		private void HandleNewMessage(string message)

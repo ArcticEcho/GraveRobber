@@ -10,6 +10,7 @@ namespace GraveRobber.StackExchange
 		private class QueueItem
 		{
 			public int QuestionId;
+			public QuestionWatcher WatcherToRestart;
 			public Action<QuestionWatcher> Callback;
 		}
 
@@ -77,9 +78,28 @@ namespace GraveRobber.StackExchange
 				if (queue.Count == 0) continue;
 
 				var item = queue.Dequeue();
-				var qw = TryCreate(item.QuestionId, waitMs);
 
-				item.Callback?.Invoke(qw);
+				if (item.WatcherToRestart == null)
+				{
+					var qw = TryCreate(item.QuestionId, waitMs);
+
+					item.Callback?.Invoke(qw);
+				}
+				else
+				{
+					RestartWatcherWebSocket(item.WatcherToRestart);
+				}
+			}
+		}
+
+		private void RestartWatcherWebSocket(QuestionWatcher qw)
+		{
+			if (!qw.Init())
+			{
+				queue.Enqueue(new QueueItem
+				{
+					WatcherToRestart = qw
+				});
 			}
 		}
 
@@ -87,7 +107,16 @@ namespace GraveRobber.StackExchange
 		{
 			try
 			{
-				return new QuestionWatcher(id);
+				return new QuestionWatcher(id)
+				{
+					WebsocketRestartCallback = x =>
+					{
+						queue.Enqueue(new QueueItem
+						{
+							WatcherToRestart = x
+						});
+					}
+				};
 			}
 			catch (Exception ex)
 			{
