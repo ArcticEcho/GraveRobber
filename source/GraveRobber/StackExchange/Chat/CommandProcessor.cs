@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using StackExchange;
 using StackExchange.Chat;
 using StackExchange.Chat.Actions;
 using StackExchange.Chat.Events;
@@ -21,11 +22,11 @@ namespace GraveRobber.StackExchange.Chat
 
 
 
-		public CommandProcessor(IEnumerable<Cookie> authCookies, string roomUrl)
+		public CommandProcessor(IAuthenticationProvider auth, string roomUrl)
 		{
 			pingRemover = new Regex("@\\S{2,}\\s?", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-			actionScheduler = new ActionScheduler(authCookies, roomUrl);
-			roomWatcher = new RoomWatcher<DefaultWebSocket>(authCookies, roomUrl);
+			actionScheduler = new ActionScheduler(auth, roomUrl);
+			roomWatcher = new RoomWatcher<DefaultWebSocket>(auth, roomUrl);
 
 			roomWatcher.WebSocket.OnError += ex => Console.WriteLine(ex);
 			roomWatcher.AddUserMentionedEventHandler(HandleMention);

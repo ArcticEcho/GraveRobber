@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using StackExchange;
 using StackExchange.Chat;
 using StackExchange.Chat.Events;
 using StackExchange.Chat.Events.Message.Extensions;
@@ -16,7 +17,7 @@ namespace GraveRobber.StackExchange.Chat
 
 		public event Action<Message, int> OnNewRequest;
 
-		public CloseRequestWatcher(IEnumerable<Cookie> authCookies)
+		public CloseRequestWatcher(IAuthenticationProvider auth)
 		{
 			var cvplsPatternStr = ConfigAccessor.GetValue<string>("CloseRequestPattern");
 
@@ -24,7 +25,7 @@ namespace GraveRobber.StackExchange.Chat
 
 			var roomUrl = ConfigAccessor.GetValue<string>("StackExchange.Chat.RoomUrl");
 
-			roomWatcher = new RoomWatcher<DefaultWebSocket>(authCookies, roomUrl);
+			roomWatcher = new RoomWatcher<DefaultWebSocket>(auth, roomUrl);
 
 			roomWatcher.AddMessageCreatedEventHandler(HandleNewMessage);
 

@@ -7,6 +7,7 @@ using GraveRobber.Edit;
 using GraveRobber.StackExchange;
 using GraveRobber.StackExchange.Api;
 using GraveRobber.StackExchange.Chat;
+using StackExchange;
 using StackExchange.Auth;
 using StackExchange.Chat;
 using StackExchange.Chat.Actions;
@@ -42,22 +43,22 @@ namespace GraveRobber
 			Console.Write("done\nAuthenticating with SE...");
 
 			var roomUrl = ConfigAccessor.GetValue<string>("StackExchange.Chat.RoomUrl");
-			var cookies = Login(roomUrl);
+			var auth = Login(roomUrl);
 
 			Console.Write("done\nStarting cv-pls monitor...");
 
-			var cvWatcher = new CloseRequestWatcher(cookies);
+			var cvWatcher = new CloseRequestWatcher(auth);
 			cvWatcher.OnNewRequest += HandleNewCvpls;
 			Task.Run(() => RemoveOldQuestionsLoop(false));
 
 			Console.Write("done\nInitialising chat command processor...");
 
-			var cmdPro = new CommandProcessor(cookies, roomUrl);
+			var cmdPro = new CommandProcessor(auth, roomUrl);
 			cmdPro.OnKillRequest += () => shutdownMre.Set();
 
 			Console.Write("done\nInitialising report poster...");
 
-			actionScheduler = new ActionScheduler(cookies, roomUrl);
+			actionScheduler = new ActionScheduler(auth, roomUrl);
 
 			Console.Write("done\n\nSetup complete. Press CTRL + C to quit.\n\n");
 
@@ -111,15 +112,13 @@ namespace GraveRobber
 			}
 		}
 
-		private static IEnumerable<Cookie> Login(string roomUrl)
+		private static IAuthenticationProvider Login(string roomUrl)
 		{
 			var email = ConfigAccessor.GetValue<string>("StackExchange.Chat.Email");
 			var password = ConfigAccessor.GetValue<string>("StackExchange.Chat.Password");
 			var host = roomUrl.Split('/')[2].Replace("chat.", "");
 
-			var auth = new EmailAuthenticationProvider(email, password);
-
-			return auth.GetAuthCookies(host);
+			return new EmailAuthenticationProvider(email, password);
 		}
 
 		private static void RemoveOldQuestionsLoop(bool runOnce)
