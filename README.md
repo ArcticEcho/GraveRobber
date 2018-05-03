@@ -19,4 +19,4 @@ Using the above example report:
  - `84% code`: This measures how much of the edit affects code. In this case, 84% of the total characters changed by this edit were code characters.
  - `(-4/+1)`: Is simply a break-down of the question's up- and down-votes.
  
- <sup>1</sup> Can only be seen by hovering over the first link in the report.
+ <sup>1</sup> Can only be seen by hovering over the "45%" link in the report.
